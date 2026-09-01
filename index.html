@@ -73,6 +73,11 @@
         <p class="data-note" id="dataNote" role="note">
           开放时间与截止时间为模拟的 2026 秋招日期，请以企业官方页面为准。
         </p>
+        <div class="data-provenance" id="dataProvenance" role="status" aria-live="polite">
+          <span class="provenance-kind" id="dataSourceKind">示例数据</span>
+          <span id="dataSourceName">来源：内置示例</span>
+          <span id="dataLastSync">最后同步：暂无</span>
+        </div>
 
         <section class="stats-section" aria-labelledby="stats-title">
           <div class="section-title-row stats-title-row">
@@ -198,6 +203,76 @@
             </div>
           </form>
 
+          <section class="city-discovery" id="cityDiscovery" aria-labelledby="cityDiscoveryTitle">
+            <div class="city-discovery-copy">
+              <p class="eyebrow">City discovery</p>
+              <h3 id="cityDiscoveryTitle">城市职位发现</h3>
+              <p id="cityDiscoveryContext">全部城市 · 可叠加其他筛选条件</p>
+            </div>
+            <div class="city-discovery-metrics" aria-live="polite" aria-atomic="true">
+              <div class="discovery-metric">
+                <span>匹配岗位</span>
+                <strong id="cityMatchCount">—</strong>
+              </div>
+              <div class="discovery-metric">
+                <span>来源数</span>
+                <strong id="citySourceCount">—</strong>
+              </div>
+              <div class="discovery-metric discovery-metric-wide">
+                <span>最后同步</span>
+                <strong id="cityLastSync">—</strong>
+              </div>
+            </div>
+            <button class="button button-quiet city-discovery-reset" id="restoreCitiesButton" type="button">
+              恢复全部城市
+            </button>
+          </section>
+
+          <section class="status-assistant" aria-labelledby="statusAssistantTitle">
+            <div class="status-assistant-heading">
+              <div>
+                <p class="eyebrow">Local status assistant</p>
+                <h3 id="statusAssistantTitle">投递状态助手</h3>
+                <p class="assistant-description">根据通知中的关键词给出状态建议，确认后才会更新岗位进度。</p>
+              </div>
+              <span class="assistant-local-pill">仅本机</span>
+            </div>
+            <div class="status-assistant-form">
+              <label class="field assistant-job-field">
+                <span class="field-label">选择职位</span>
+                <select id="statusAssistantJobSelect" aria-describedby="statusAssistantPrivacy">
+                  <option value="">请选择要更新的职位</option>
+                </select>
+              </label>
+              <label class="field assistant-notice-field">
+                <span class="field-label">粘贴通知</span>
+                <textarea id="statusAssistantNotice" rows="4" placeholder="例如：恭喜你进入面试环节，请在……前确认时间。" aria-describedby="statusAssistantPrivacy"></textarea>
+              </label>
+              <div class="assistant-form-actions">
+                <button class="button button-primary" id="statusAssistantAnalyzeButton" type="button">分析通知</button>
+                <button class="button button-quiet" id="statusAssistantClearButton" type="button">清空</button>
+              </div>
+            </div>
+            <p class="assistant-privacy" id="statusAssistantPrivacy">通知文本只在本机临时分析，不上传、不保存。</p>
+            <div class="assistant-result" id="statusAssistantResult" aria-live="polite" aria-atomic="true" hidden>
+              <div class="assistant-result-summary">
+                <span class="assistant-result-label">建议状态</span>
+                <strong id="statusAssistantRecommendation">—</strong>
+                <span class="assistant-confidence" id="statusAssistantConfidence">—</span>
+              </div>
+              <p class="assistant-current-status" id="statusAssistantCurrentStatus"></p>
+              <div class="assistant-evidence-block">
+                <span class="assistant-result-label">判断依据</span>
+                <ul id="statusAssistantEvidence"></ul>
+              </div>
+              <p class="assistant-message" id="statusAssistantMessage" role="status"></p>
+              <div class="assistant-result-actions">
+                <button class="button button-primary" id="statusAssistantConfirmButton" type="button" disabled>确认并更新状态</button>
+                <button class="button button-quiet" id="statusAssistantCancelButton" type="button">取消</button>
+              </div>
+            </div>
+          </section>
+
           <div class="results-toolbar">
             <div class="results-summary">
               <span class="results-count" id="resultsCount" aria-live="polite">正在加载…</span>
@@ -254,9 +329,12 @@
               <span class="empty-spark spark-b"></span>
               <span class="empty-spark spark-c"></span>
             </div>
-            <h3>没有找到匹配的岗位</h3>
-            <p>试试减少筛选条件，或者换一个关键词继续看看。</p>
-            <button class="button button-secondary" id="emptyClearButton" type="button">清除筛选条件</button>
+            <h3 id="emptyStateTitle">没有找到匹配的岗位</h3>
+            <p id="emptyStateDescription">试试减少筛选条件，或者换一个关键词继续看看。</p>
+            <div class="empty-actions">
+              <button class="button button-secondary" id="emptyRestoreCitiesButton" type="button">恢复全部城市</button>
+              <button class="button button-secondary" id="emptyClearButton" type="button">清除全部筛选</button>
+            </div>
           </div>
         </section>
       </main>
@@ -273,7 +351,8 @@
 
     <noscript class="noscript-note">本平台需要启用 JavaScript 才能加载招聘数据、筛选岗位和更新投递状态。</noscript>
 
-    <!-- data.js provides globalThis.INITIAL_RECRUITMENT_DATA before app.js runs. -->
+    <!-- Optional generated sync data must load before the built-in fallback. -->
+    <script src="data/jobs.generated.js" defer></script>
     <script src="data.js" defer></script>
     <script src="app.js" defer></script>
   </body>
