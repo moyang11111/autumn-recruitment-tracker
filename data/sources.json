@@ -10,13 +10,13 @@
     "enabled": true
   },
   {
-    "id": "lever-intercom",
-    "name": "Intercom Careers（Lever）",
+    "id": "lever-palantir",
+    "name": "Palantir Careers（Lever）",
     "type": "lever",
-    "site": "intercom",
-    "companyName": "Intercom",
+    "site": "palantir",
+    "companyName": "Palantir",
     "companyType": "外企",
-    "campusUrl": "https://www.intercom.com/careers",
+    "campusUrl": "https://www.palantir.com/careers/",
     "enabled": true
   }
 ]

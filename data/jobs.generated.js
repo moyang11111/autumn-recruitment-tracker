@@ -12,8 +12,8 @@ globalThis.RECRUITMENT_SYNC_PAYLOAD = {
       "recordCount": 0
     },
     {
-      "id": "lever-intercom",
-      "name": "Intercom Careers（Lever）",
+      "id": "lever-palantir",
+      "name": "Palantir Careers（Lever）",
       "type": "lever",
       "status": "not_checked",
       "lastCheckedAt": "",
