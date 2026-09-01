@@ -197,9 +197,93 @@ function validateIntegration() {
   checkHook(html, "状态展示或编辑入口", [/投递状态/, /status/i, /已投递/, /未投递/]);
 }
 
+function createMemoryStorage(initialValue = null, failWrites = false) {
+  const values = new Map();
+  if (initialValue !== null) values.set("autumn-recruitment-tracker:v1", initialValue);
+  return {
+    getItem(key) {
+      return values.has(key) ? values.get(key) : null;
+    },
+    setItem(key, value) {
+      if (failWrites) throw new Error("simulated storage failure");
+      values.set(key, value);
+    },
+    removeItem(key) {
+      values.delete(key);
+    },
+  };
+}
+
+function loadBehaviorApp(storage) {
+  const appSource = readIfExists("app.js");
+  const sandbox = {
+    INITIAL_RECRUITMENT_DATA: context.INITIAL_RECRUITMENT_DATA,
+    RECRUITMENT_STATUS_OPTIONS: context.RECRUITMENT_STATUS_OPTIONS,
+    RECRUITMENT_COMPANY_TYPES: context.RECRUITMENT_COMPANY_TYPES,
+    RECRUITMENT_DATA_META: context.RECRUITMENT_DATA_META,
+    localStorage: storage,
+    URL,
+    console,
+    module: { exports: {} },
+  };
+  const appContext = vm.createContext(sandbox);
+  try {
+    vm.runInContext(appSource, appContext, { filename: path.join(ROOT, "app.js") });
+  } catch (error) {
+    fail(`app.js 行为检查无法执行：${error.message}`);
+    return null;
+  }
+  return appContext.AutumnRecruitmentApp || appContext.module.exports;
+}
+
+function validateBehavior() {
+  const appPath = path.join(ROOT, "app.js");
+  if (!fs.existsSync(appPath)) {
+    note("尚未集成 app.js，已跳过无依赖行为检查。");
+    return;
+  }
+
+  const app = loadBehaviorApp(createMemoryStorage());
+  if (!app) return;
+
+  assert(app.isHttpsUrl("https://example.com/campus"), "行为检查：应接受 HTTPS 校招链接");
+  for (const unsafeUrl of ["http://example.com", "javascript:alert(1)", "data:text/html,blocked"]) {
+    assert(!app.isHttpsUrl(unsafeUrl), `行为检查：应拒绝不安全校招链接 ${unsafeUrl}`);
+  }
+
+  const validRecord = { ...app.data[0], categories: [...app.data[0].categories] };
+  assert(app.isValidStoredRecord(validRecord), "行为检查：应接受有效存储记录");
+  assert(!app.isValidStoredRecord({ ...validRecord, openDate: "2026-02-30" }), "行为检查：应拒绝无效 YYYY-MM-DD 日期");
+  assert(!app.isValidStoredRecord({ ...validRecord, openDate: "2026-09-20", deadline: "2026-09-10" }), "行为检查：应拒绝开放日期晚于截止日期");
+
+  const rows = app.data.slice(0, 3).map((record, index) => ({
+    ...record,
+    statusUpdatedAt: ["2026-08-31T09:00:00+08:00", "2026-09-02T09:00:00+08:00", "2026-08-30T09:00:00+08:00"][index],
+  }));
+  const ascendingIds = app.sortRecords(rows, "updated-asc").map((record) => record.id);
+  const descendingIds = app.sortRecords(rows, "updated-desc").map((record) => record.id);
+  assert(ascendingIds.join(",") === `${rows[2].id},${rows[0].id},${rows[1].id}`, "行为检查：更新时间正序错误");
+  assert(descendingIds.join(",") === `${rows[1].id},${rows[0].id},${rows[2].id}`, "行为检查：更新时间倒序错误");
+
+  const csvRecord = { ...validRecord, companyName: '测试, "企业"', categories: ["岗位", "测试"] };
+  const csv = app.makeCsv([csvRecord]);
+  assert(csv.charCodeAt(0) === 0xfeff, "行为检查：CSV 缺少 UTF-8 BOM");
+  assert(csv.includes('"测试, ""企业"""'), "行为检查：CSV 未正确转义逗号和双引号");
+  assert(csv.includes('"岗位、测试"'), "行为检查：CSV 未正确合并岗位类别");
+
+  const unsafeData = JSON.parse(JSON.stringify(context.INITIAL_RECRUITMENT_DATA));
+  unsafeData[0].campusUrl = "javascript:alert(1)";
+  const unsafeApp = loadBehaviorApp(createMemoryStorage(JSON.stringify(unsafeData)));
+  assert(unsafeApp && unsafeApp.data[0].campusUrl === context.INITIAL_RECRUITMENT_DATA[0].campusUrl, "行为检查：不安全存储链接不应进入应用状态");
+
+  const failingApp = loadBehaviorApp(createMemoryStorage(null, true));
+  assert(failingApp && failingApp.writeRecords(failingApp.data) === false, "行为检查：存储失败应返回 false");
+}
+
 const context = loadDataFile();
 validateData(context);
 validateIntegration();
+validateBehavior();
 
 if (errors.length > 0) {
   console.error("验证失败：");

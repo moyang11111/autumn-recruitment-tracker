@@ -1109,23 +1109,23 @@ h1 span {
   width: fit-content;
   padding: 2px 6px;
   border-radius: 4px;
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .deadline-open .deadline-state {
-  background: var(--forest-light);
-  color: var(--forest);
+  background: #dcece5;
+  color: #1d5c4c;
 }
 
 .deadline-soon .deadline-state {
-  background: #fff1d7;
-  color: #97621c;
+  background: #ffedc9;
+  color: #704908;
 }
 
 .deadline-expired .deadline-state {
-  background: #f1f2f0;
-  color: #8a938d;
+  background: #e7eae7;
+  color: #55615a;
 }
 
 .status-picker {
@@ -1165,58 +1165,58 @@ h1 span {
 
 .status-picker.status-not-applied,
 .status-badge.status-not-applied {
-  --status-bg: #f0f2f0;
-  --status-fg: #68736d;
-  --status-border: #d8dfda;
+  --status-bg: #e8ece9;
+  --status-fg: #34473e;
+  --status-border: #c6d2c9;
 }
 
 .status-picker.status-submitted,
 .status-badge.status-submitted {
-  --status-bg: #eaf1ff;
-  --status-fg: #456ba6;
-  --status-border: #c9d8f0;
+  --status-bg: #e7f0ff;
+  --status-fg: #244f90;
+  --status-border: #b9cde9;
 }
 
 .status-picker.status-screening,
 .status-badge.status-screening {
-  --status-bg: #f2edff;
-  --status-fg: #7258a2;
-  --status-border: #ded2f5;
+  --status-bg: #eee8ff;
+  --status-fg: #593a91;
+  --status-border: #d3c2f2;
 }
 
 .status-picker.status-test,
 .status-badge.status-test {
-  --status-bg: #fff4dc;
-  --status-fg: #9a6d1d;
-  --status-border: #f0dbad;
+  --status-bg: #fff0c9;
+  --status-fg: #6f4a08;
+  --status-border: #e7c77e;
 }
 
 .status-picker.status-interview,
 .status-badge.status-interview {
-  --status-bg: #e6f5f1;
-  --status-fg: #2d7a69;
-  --status-border: #c5e5db;
+  --status-bg: #dff1eb;
+  --status-fg: #176251;
+  --status-border: #b4ded1;
 }
 
 .status-picker.status-offer,
 .status-badge.status-offer {
-  --status-bg: #fff0df;
-  --status-fg: #b35f26;
-  --status-border: #f0d0ad;
+  --status-bg: #ffead4;
+  --status-fg: #91420f;
+  --status-border: #e6b98e;
 }
 
 .status-picker.status-rejected,
 .status-badge.status-rejected {
-  --status-bg: #fbe9e7;
-  --status-fg: #a9504a;
-  --status-border: #efc9c5;
+  --status-bg: #f9e0df;
+  --status-fg: #873732;
+  --status-border: #e6b8b4;
 }
 
 .status-picker.status-accepted,
 .status-badge.status-accepted {
-  --status-bg: #e5f2e1;
-  --status-fg: #437944;
-  --status-border: #c7dfc1;
+  --status-bg: #e0efdc;
+  --status-fg: #2d652e;
+  --status-border: #b9d5b2;
 }
 
 .status-select {
@@ -1227,9 +1227,20 @@ h1 span {
   appearance: none;
   background: transparent;
   color: inherit;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   outline: 0;
+}
+
+.status-picker:focus-within {
+  border-color: var(--forest);
+  box-shadow: 0 0 0 3px rgba(23, 63, 59, 0.12);
+}
+
+.status-select:focus-visible {
+  outline: 2px solid var(--forest);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .status-select option {
@@ -1269,6 +1280,12 @@ h1 span {
   color: var(--forest);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.campus-link-disabled {
+  color: var(--ink-soft);
+  cursor: not-allowed;
+  text-decoration: none;
 }
 
 .campus-link svg {

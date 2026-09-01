@@ -77,16 +77,42 @@
     return null;
   }
 
+  function isDateOnly(value) {
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  }
+
+  function isHttpsUrl(value) {
+    if (typeof value !== "string" || !value.trim()) return false;
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" && Boolean(url.hostname);
+    } catch {
+      return false;
+    }
+  }
+
+  function safeCampusUrl(value) {
+    if (!isHttpsUrl(value)) return "";
+    try {
+      return new URL(value).href;
+    } catch {
+      return "";
+    }
+  }
+
   function isValidStoredRecord(record) {
     if (!record || typeof record !== "object" || Array.isArray(record)) return false;
     if (typeof record.id !== "string" || !record.id.trim()) return false;
     if (typeof record.companyName !== "string" || !record.companyName.trim()) return false;
     if (!companyTypeOptions.includes(record.companyType)) return false;
     if (!statusOptions.includes(record.status)) return false;
-    if (typeof record.openDate !== "string" || typeof record.deadline !== "string") return false;
+    if (!isDateOnly(record.openDate) || !isDateOnly(record.deadline)) return false;
+    if (record.openDate > record.deadline) return false;
     if (typeof record.province !== "string" || typeof record.city !== "string") return false;
     if (!Array.isArray(record.categories)) return false;
-    if (typeof record.campusUrl !== "string" || !record.campusUrl.trim()) return false;
+    if (!isHttpsUrl(record.campusUrl)) return false;
     if (typeof record.statusUpdatedAt !== "string" || Number.isNaN(Date.parse(record.statusUpdatedAt))) return false;
     return true;
   }
@@ -111,7 +137,7 @@
     const storage = getStorage();
     state.storageAvailable = Boolean(storage);
     if (!storage) {
-      updateSaveHint("仅保存在当前页面");
+      updateSaveHint("未持久化：本机存储不可用");
       return false;
     }
 
@@ -121,7 +147,8 @@
       updateSaveHint(`已保存 ${formatClock(now)}`);
       return true;
     } catch {
-      updateSaveHint("无法写入本机存储");
+      state.storageAvailable = false;
+      updateSaveHint("未持久化：无法写入本机存储");
       return false;
     }
   }
@@ -160,7 +187,7 @@
     return `"${text.replace(/"/g, '""')}"`;
   }
 
-  function makeCsv(records) {
+  function makeCsv(records = state.records) {
     const header = [
       "企业名称",
       "企业性质",
@@ -188,7 +215,7 @@
     return `\uFEFF${[header, ...rows].map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
   }
 
-  function downloadCsv(records) {
+  function downloadCsv(records = state.records) {
     const csv = makeCsv(records);
     if (!hasDocument || typeof Blob === "undefined") return csv;
 
@@ -304,6 +331,12 @@
         result = compareText(left.record.deadline, right.record.deadline);
       } else if (sortValue.startsWith("status")) {
         result = statusIndex(left.record.status) - statusIndex(right.record.status);
+      } else if (sortValue.startsWith("updated")) {
+        const leftUpdatedAt = Date.parse(left.record.statusUpdatedAt);
+        const rightUpdatedAt = Date.parse(right.record.statusUpdatedAt);
+        const leftTimestamp = Number.isNaN(leftUpdatedAt) ? 0 : leftUpdatedAt;
+        const rightTimestamp = Number.isNaN(rightUpdatedAt) ? 0 : rightUpdatedAt;
+        result = leftTimestamp - rightTimestamp;
       }
       if (result === 0) result = left.index - right.index;
       return result * direction;
@@ -408,6 +441,15 @@
     </label>`;
   }
 
+  function renderCampusLink(record, compact = false) {
+    const campusUrl = safeCampusUrl(record.campusUrl);
+    if (!campusUrl) {
+      return `<span class="campus-link campus-link-disabled" role="status">链接待核实</span>`;
+    }
+    const label = compact ? "打开官网" : "官网";
+    return `<a class="campus-link" href="${escapeHtml(campusUrl)}" target="_blank" rel="noopener noreferrer" aria-label="打开 ${escapeHtml(record.companyName)} 校招官网">${label}<svg aria-hidden="true" viewBox="0 0 16 16" fill="none"><path d="M5.2 3.4h7.4v7.4M12.3 3.7 4.1 11.9" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.1 8.5v2.8c0 .5-.4.9-.9.9H3.8c-.5 0-.9-.4-.9-.9V6.8c0-.5.4-.9.9-.9h2.8" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></svg></a>`;
+  }
+
   function renderDeadline(record, extraClass = "") {
     const status = deadlineState(record.deadline);
     return `<div class="deadline-cell deadline-${status} ${extraClass}">
@@ -436,7 +478,7 @@
       <td>${renderDeadline(record)}</td>
       <td>${renderStatusPicker(record)}</td>
       <td><div class="updated-cell"><time datetime="${escapeHtml(record.statusUpdatedAt)}">${escapeHtml(formatUpdatedAt(record.statusUpdatedAt))}</time><span class="updated-caption">状态更新时间</span></div></td>
-      <td><a class="campus-link" href="${escapeHtml(record.campusUrl)}" target="_blank" rel="noopener noreferrer" aria-label="打开 ${escapeHtml(record.companyName)} 校招官网">官网<svg aria-hidden="true" viewBox="0 0 16 16" fill="none"><path d="M5.2 3.4h7.4v7.4M12.3 3.7 4.1 11.9" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.1 8.5v2.8c0 .5-.4.9-.9.9H3.8c-.5 0-.9-.4-.9-.9V6.8c0-.5.4-.9.9-.9h2.8" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></svg></a></td>
+      <td>${renderCampusLink(record)}</td>
     </tr>`).join("");
   }
 
@@ -454,7 +496,7 @@
         <div class="job-card-field"><span class="job-card-label">岗位方向</span><div class="job-card-value">${renderCategories(record)}</div></div>
         <div class="job-card-field"><span class="job-card-label">工作地点</span><div class="job-card-value location-cell"><strong>${escapeHtml(record.city)}</strong><span>${escapeHtml(record.province)}</span></div></div>
         <div class="job-card-field"><span class="job-card-label">开放 / 截止</span><div class="job-card-value">${renderDeadline(record, "job-card-deadline")}</div></div>
-        <div class="job-card-field"><span class="job-card-label">校招官网</span><div class="job-card-value"><a class="campus-link" href="${escapeHtml(record.campusUrl)}" target="_blank" rel="noopener noreferrer" aria-label="打开 ${escapeHtml(record.companyName)} 校招官网">打开官网<svg aria-hidden="true" viewBox="0 0 16 16" fill="none"><path d="M5.2 3.4h7.4v7.4M12.3 3.7 4.1 11.9" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.1 8.5v2.8c0 .5-.4.9-.9.9H3.8c-.5 0-.9-.4-.9-.9V6.8c0-.5.4-.9.9-.9h2.8" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></svg></a></div></div>
+        <div class="job-card-field"><span class="job-card-label">校招官网</span><div class="job-card-value">${renderCampusLink(record, true)}</div></div>
       </div>
       <div class="job-card-footer">
         ${renderStatusPicker(record, "移动端")}
@@ -536,6 +578,30 @@
     if (showMessage) showToast("已清除全部筛选条件");
   }
 
+  function statusViewForControl(control) {
+    if (!hasDocument || !control || typeof control.closest !== "function") return null;
+    if (control.closest("#mobileCardView")) return "mobile";
+    if (control.closest("#desktopTableView")) return "desktop";
+    return null;
+  }
+
+  function isStatusViewVisible(view) {
+    const container = view === "mobile" ? dom.mobileCardView : dom.desktopTableView;
+    if (!container || container.hidden) return false;
+    if (typeof root.getComputedStyle === "function") {
+      const computed = root.getComputedStyle(container);
+      if (computed && (computed.display === "none" || computed.visibility === "hidden")) return false;
+    }
+    return true;
+  }
+
+  function findStatusControl(recordId, view) {
+    const container = view === "mobile" ? dom.mobileCardView : dom.tableBody;
+    if (!container || typeof container.querySelectorAll !== "function") return null;
+    return [...container.querySelectorAll("select[data-status-id]")]
+      .find((select) => select.dataset.statusId === recordId) || null;
+  }
+
   function handleFilterChange(event) {
     const field = event.target.closest?.("[data-filter]");
     if (!field) return;
@@ -550,22 +616,25 @@
   function updateStatus(recordId, nextStatus, sourceControl) {
     if (!statusOptions.includes(nextStatus)) {
       renderAll();
-      return;
+      return false;
     }
     const record = state.records.find((item) => item.id === recordId);
-    if (!record || record.status === nextStatus) return;
+    if (!record || record.status === nextStatus) return false;
 
     const shouldRefocus = hasDocument && document.activeElement === sourceControl;
+    const sourceView = shouldRefocus ? statusViewForControl(sourceControl) : null;
     record.status = nextStatus;
     record.statusUpdatedAt = new Date().toISOString();
-    writeRecords(state.records);
+    const persisted = writeRecords(state.records);
     renderAll();
-    if (shouldRefocus) {
-      const replacement = [...document.querySelectorAll("select[data-status-id]")]
-        .find((select) => select.dataset.statusId === recordId);
+    if (shouldRefocus && sourceView && isStatusViewVisible(sourceView)) {
+      const replacement = findStatusControl(recordId, sourceView);
       if (replacement) replacement.focus();
     }
-    showToast(`${record.companyName}：已更新为“${nextStatus}”`);
+    showToast(persisted
+      ? `${record.companyName}：已更新为“${nextStatus}”`
+      : `${record.companyName}：状态已更新，但未持久化，请不要刷新页面`);
+    return persisted;
   }
 
   function handleStatusChange(event) {
@@ -581,9 +650,10 @@
     state.records = cloneRecords(initialRecords);
     state.sort = "default";
     clearFilters();
-    writeRecords(state.records);
+    const persisted = writeRecords(state.records);
     renderAll();
-    showToast("已恢复示例数据");
+    showToast(persisted ? "已恢复示例数据" : "示例数据已恢复，但未持久化，请不要刷新页面");
+    return persisted;
   }
 
   function bindEvents() {
@@ -651,7 +721,7 @@
     if (!hasDocument || init.started) return;
     init.started = true;
     collectDom();
-    updateSaveHint(state.storageAvailable ? "数据仅保存在本机" : "仅保存在当前页面");
+    updateSaveHint(state.storageAvailable ? "数据仅保存在本机" : "未持久化：本机存储不可用");
     updateDataNote();
     populateEnumOptions();
     refreshLocationOptions();
@@ -675,6 +745,11 @@
     sortRecords,
     makeCsv,
     downloadCsv,
+    isDateOnly,
+    isHttpsUrl,
+    safeCampusUrl,
+    isValidStoredRecord,
+    writeRecords,
     statusClassName,
     updateStatus,
     resetToInitialData,
