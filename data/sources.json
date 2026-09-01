@@ -1,0 +1,22 @@
+[
+  {
+    "id": "greenhouse-airbnb",
+    "name": "Airbnb Careers（Greenhouse）",
+    "type": "greenhouse",
+    "boardToken": "airbnb",
+    "companyName": "Airbnb",
+    "companyType": "外企",
+    "campusUrl": "https://careers.airbnb.com/",
+    "enabled": true
+  },
+  {
+    "id": "lever-intercom",
+    "name": "Intercom Careers（Lever）",
+    "type": "lever",
+    "site": "intercom",
+    "companyName": "Intercom",
+    "companyType": "外企",
+    "campusUrl": "https://www.intercom.com/careers",
+    "enabled": true
+  }
+]

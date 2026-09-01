@@ -5,8 +5,11 @@
   "description": "无依赖的静态秋招资源汇总与投递进度管理平台",
   "type": "commonjs",
   "scripts": {
-    "test": "node tests/verify.mjs",
-    "test:integration": "node tests/verify.mjs --integration"
+    "test": "node tests/verify.mjs && node --test tests/sync-jobs.test.mjs",
+    "test:sync": "node --test tests/sync-jobs.test.mjs",
+    "test:integration": "node tests/verify.mjs --integration",
+    "sync": "node scripts/sync-jobs.mjs",
+    "sync:jobs": "node scripts/sync-jobs.mjs"
   },
   "engines": {
     "node": ">=18"
