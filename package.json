@@ -1,0 +1,14 @@
+{
+  "name": "autumn-recruitment-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "无依赖的静态秋招资源汇总与投递进度管理平台",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node tests/verify.mjs",
+    "test:integration": "node tests/verify.mjs --integration"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
