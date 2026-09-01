@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f7f2" />
+    <meta
+      name="description"
+      content="秋招资源汇总平台：整理校招信息，追踪每一次简历投递。"
+    />
+    <title>秋招追踪台 · 秋招资源汇总平台</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
+
+    <div class="app-shell">
+      <header class="site-header">
+        <div class="header-inner">
+          <a class="brand" href="./" aria-label="秋招追踪台首页">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6.75 22.3C10.1 21.85 13.65 19.35 15.1 15.2C16.25 11.9 16.02 8.84 15.7 6.5" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/>
+                <path d="M15.75 17.2C18.2 17.4 21.95 16.67 24.9 13.4C26.02 12.16 26.8 10.82 27.3 9.7" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/>
+                <path d="M6.4 25.8C11.7 26.2 18.65 25.12 23.8 21.25" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/>
+                <path d="M22.75 5.2C23.38 7.2 23.15 9.03 22.05 10.68" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="brand-copy">
+              <span class="brand-name">秋招追踪台</span>
+              <span class="brand-subtitle">Autumn hiring desk</span>
+            </span>
+          </a>
+
+          <div class="header-meta">
+            <span class="season-pill"><span class="status-dot" aria-hidden="true"></span>2026 秋招季</span>
+            <span class="save-hint" id="saveHint">数据仅保存在本机</span>
+          </div>
+        </div>
+      </header>
+
+      <main id="main-content" class="page-main">
+        <section class="hero" aria-labelledby="page-title">
+          <div class="hero-copy">
+            <p class="eyebrow">秋招资源汇总平台</p>
+            <h1 id="page-title">把每一次投递，<br /><span>变成下一步。</span></h1>
+            <p class="hero-description">
+              集中整理央国企与优质企业校招信息，记录进度、关注截止日期，把有限的精力留给真正重要的选择。
+            </p>
+            <div class="hero-actions" aria-label="快捷操作">
+              <button class="button button-primary" id="heroExportButton" type="button">
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 3.2v8.7m0 0 3.15-3.15M10 11.9 6.85 8.75M4.25 13.75v1.1c0 .8.65 1.45 1.45 1.45h8.6c.8 0 1.45-.65 1.45-1.45v-1.1" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                导出当前清单
+              </button>
+              <button class="button button-quiet" id="heroResetButton" type="button">恢复示例数据</button>
+            </div>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="orbit orbit-one"></div>
+            <div class="orbit orbit-two"></div>
+            <div class="hero-sun"></div>
+            <div class="hero-leaf leaf-one"></div>
+            <div class="hero-leaf leaf-two"></div>
+            <div class="hero-leaf leaf-three"></div>
+            <div class="hero-note note-one"><span>投递</span><strong>→</strong></div>
+            <div class="hero-note note-two"><span>面试</span><strong>✓</strong></div>
+            <div class="hero-caption"><span class="caption-line"></span><span>Keep moving</span></div>
+          </div>
+        </section>
+
+        <p class="data-note" id="dataNote" role="note">
+          开放时间与截止时间为模拟的 2026 秋招日期，请以企业官方页面为准。
+        </p>
+
+        <section class="stats-section" aria-labelledby="stats-title">
+          <div class="section-title-row stats-title-row">
+            <div>
+              <p class="eyebrow">Portfolio pulse</p>
+              <h2 id="stats-title">投递全景</h2>
+            </div>
+            <p class="section-note">随状态更新自动刷新</p>
+          </div>
+          <div class="stats-grid" id="statsGrid" aria-live="polite">
+            <article class="stat-card stat-card-primary">
+              <div class="stat-card-top"><span class="stat-label">总岗位数</span><span class="stat-icon" aria-hidden="true">#</span></div>
+              <strong class="stat-value" data-stat="total">—</strong>
+              <span class="stat-footnote">已收录的秋招机会</span>
+            </article>
+            <article class="stat-card stat-card-soe">
+              <div class="stat-card-top"><span class="stat-label">央国企</span><span class="stat-icon" aria-hidden="true">国</span></div>
+              <strong class="stat-value" data-stat="soe">—</strong>
+              <span class="stat-footnote">稳定与成长并行</span>
+            </article>
+            <article class="stat-card stat-card-private">
+              <div class="stat-card-top"><span class="stat-label">私企</span><span class="stat-icon" aria-hidden="true">企</span></div>
+              <strong class="stat-value" data-stat="private">—</strong>
+              <span class="stat-footnote">技术与业务机会</span>
+            </article>
+            <article class="stat-card stat-card-submitted">
+              <div class="stat-card-top"><span class="stat-label">已投递</span><span class="stat-icon" aria-hidden="true">↗</span></div>
+              <strong class="stat-value" data-stat="submitted">—</strong>
+              <span class="stat-footnote">已经迈出的每一步</span>
+            </article>
+            <article class="stat-card stat-card-interview">
+              <div class="stat-card-top"><span class="stat-label">面试中</span><span class="stat-icon" aria-hidden="true">○</span></div>
+              <strong class="stat-value" data-stat="interviewing">—</strong>
+              <span class="stat-footnote">准备好讲自己的故事</span>
+            </article>
+            <article class="stat-card stat-card-offer">
+              <div class="stat-card-top"><span class="stat-label">已发 offer</span><span class="stat-icon" aria-hidden="true">✦</span></div>
+              <strong class="stat-value" data-stat="offer">—</strong>
+              <span class="stat-footnote">正在靠近理想答案</span>
+            </article>
+            <article class="stat-card stat-card-due">
+              <div class="stat-card-top"><span class="stat-label">即将截止</span><span class="stat-icon" aria-hidden="true">!</span></div>
+              <strong class="stat-value" data-stat="dueSoon">—</strong>
+              <span class="stat-footnote">未来 3 天内需关注</span>
+            </article>
+          </div>
+        </section>
+
+        <section class="workspace-section" aria-labelledby="list-title">
+          <div class="section-title-row list-title-row">
+            <div>
+              <p class="eyebrow">Recruitment library</p>
+              <h2 id="list-title">我的秋招清单</h2>
+              <p class="section-description">用筛选器快速定位机会，直接在列表里更新投递进度。</p>
+            </div>
+            <div class="list-title-mark" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+
+          <form class="filter-panel" id="filtersForm" role="search" aria-label="筛选秋招岗位">
+            <div class="filter-panel-heading">
+              <div class="filter-heading-title">
+                <span class="filter-heading-icon" aria-hidden="true">
+                  <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3.5 5.1h13M5.6 10h8.8m-6.2 4.9h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                <span>筛选与检索</span>
+              </div>
+              <button class="text-button" id="clearFiltersButton" type="button">清除全部筛选</button>
+            </div>
+
+            <div class="filter-grid">
+              <label class="field field-search">
+                <span class="field-label">关键词</span>
+                <span class="input-wrap input-wrap-search">
+                  <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="8.9" cy="8.9" r="5.4" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="m13 13 3.4 3.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <input id="keywordInput" data-filter="keyword" type="search" autocomplete="off" placeholder="搜索企业、岗位或地点" />
+                </span>
+              </label>
+              <label class="field">
+                <span class="field-label">企业性质</span>
+                <select id="natureFilter" data-filter="nature">
+                  <option value="">全部性质</option>
+                  <option value="央国企">央国企</option>
+                  <option value="私企">私企</option>
+                  <option value="外企">外企</option>
+                  <option value="事业单位">事业单位</option>
+                  <option value="其他">其他</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field-label">省份</span>
+                <select id="provinceFilter" data-filter="province">
+                  <option value="">全部省份</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field-label">城市</span>
+                <select id="cityFilter" data-filter="city" disabled>
+                  <option value="">全部城市</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field-label">截止时间</span>
+                <select id="deadlineFilter" data-filter="deadline">
+                  <option value="">全部时间</option>
+                  <option value="open">仅看未截止</option>
+                  <option value="soon">3 天内截止</option>
+                  <option value="expired">已截止</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field-label">投递状态</span>
+                <select id="statusFilter" data-filter="status">
+                  <option value="">全部状态</option>
+                </select>
+              </label>
+            </div>
+          </form>
+
+          <div class="results-toolbar">
+            <div class="results-summary">
+              <span class="results-count" id="resultsCount" aria-live="polite">正在加载…</span>
+              <span class="results-divider" aria-hidden="true"></span>
+              <span class="results-tip">状态变更会自动保存</span>
+            </div>
+            <div class="toolbar-actions">
+              <label class="sort-control">
+                <span class="sort-label">排序</span>
+                <select id="sortSelect" aria-label="选择列表排序方式">
+                  <option value="default">默认排序</option>
+                  <option value="deadline-asc">截止时间：最近优先</option>
+                  <option value="deadline-desc">截止时间：最远优先</option>
+                  <option value="status-asc">投递状态：正序</option>
+                  <option value="status-desc">投递状态：倒序</option>
+                </select>
+              </label>
+              <button class="button button-secondary" id="exportButton" type="button">
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 3.2v8.7m0 0 3.15-3.15M10 11.9 6.85 8.75M4.25 13.75v1.1c0 .8.65 1.45 1.45 1.45h8.6c.8 0 1.45-.65 1.45-1.45v-1.1" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                导出 CSV
+              </button>
+            </div>
+          </div>
+
+          <div class="data-table-wrap" id="desktopTableView">
+            <table class="recruitment-table">
+              <caption class="sr-only">秋招企业与投递进度列表</caption>
+              <thead>
+                <tr>
+                  <th scope="col" class="company-col">企业</th>
+                  <th scope="col">性质</th>
+                  <th scope="col" class="role-col">岗位方向</th>
+                  <th scope="col">工作地点</th>
+                  <th scope="col" class="deadline-col">开放 / 截止</th>
+                  <th scope="col" class="status-col">投递状态</th>
+                  <th scope="col" class="updated-col">最近更新</th>
+                  <th scope="col" class="link-col">官网</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="mobile-card-list" id="mobileCardView" aria-label="秋招企业与投递进度列表"></div>
+
+          <div class="empty-state" id="emptyState" hidden>
+            <div class="empty-illustration" aria-hidden="true">
+              <span class="empty-circle"></span>
+              <span class="empty-spark spark-a"></span>
+              <span class="empty-spark spark-b"></span>
+              <span class="empty-spark spark-c"></span>
+            </div>
+            <h3>没有找到匹配的岗位</h3>
+            <p>试试减少筛选条件，或者换一个关键词继续看看。</p>
+            <button class="button button-secondary" id="emptyClearButton" type="button">清除筛选条件</button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="footer-inner">
+          <p><span class="footer-brand">秋招追踪台</span> · 为每一次认真准备留一份清晰记录。</p>
+          <p class="footer-note">本页面数据仅供信息整理参考，请以企业官方公告为准。</p>
+        </div>
+      </footer>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <noscript class="noscript-note">本平台需要启用 JavaScript 才能加载招聘数据、筛选岗位和更新投递状态。</noscript>
+
+    <!-- data.js provides globalThis.INITIAL_RECRUITMENT_DATA before app.js runs. -->
+    <script src="data.js" defer></script>
+    <script src="app.js" defer></script>
+  </body>
+</html>
