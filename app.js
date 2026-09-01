@@ -161,8 +161,10 @@
       const raw = storage.getItem(storageKey);
       if (raw === null) return null;
       const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed) || !parsed.every(isValidStoredRecord)) return null;
-      return cloneRecords(parsed);
+      if (!Array.isArray(parsed)) return null;
+      const validRecords = parsed.filter(isValidStoredRecord);
+      if (parsed.length > 0 && validRecords.length === 0) return null;
+      return cloneRecords(validRecords);
     } catch {
       return null;
     }
@@ -396,8 +398,8 @@
       "sync",
       syncMeta.sourceName,
       syncMeta.lastSyncAt,
-    ));
-    if (syncRecords.some((record) => !record)) {
+    )).filter(Boolean);
+    if (syncRecords.length === 0) {
       return {
         records: exampleRecords,
         syncRecords: [],
@@ -423,15 +425,17 @@
         mode: "sync",
         label: "自动同步 + 示例数据",
         sourceName: syncMeta.sourceName,
-        lastSyncAt: syncMeta.lastSyncAt,
+        lastSyncAt: inferredLastSyncAt,
       },
     };
   }
 
   function applyStoredProgress(records, storedRecords) {
     if (!Array.isArray(storedRecords)) return records;
-    const progressById = new Map(storedRecords.map((record) => [record.id, record]));
-    return records.map((record) => {
+    const validStoredRecords = storedRecords.filter(isValidStoredRecord);
+    const progressById = new Map(validStoredRecords.map((record) => [record.id, record]));
+    const currentIds = new Set(records.map((record) => record.id));
+    const mergedRecords = records.map((record) => {
       const stored = progressById.get(record.id);
       if (!stored || !statusOptions.includes(stored.status) || !isValidTimestamp(stored.statusUpdatedAt)) {
         return record;
@@ -442,6 +446,10 @@
         statusUpdatedAt: stored.statusUpdatedAt,
       };
     });
+    const historicalRecords = [...progressById.values()]
+      .filter((record) => !currentIds.has(record.id) && record.status !== DEFAULT_STATUS)
+      .map(cloneRecord);
+    return [...mergedRecords, ...historicalRecords];
   }
 
   function loadRecords() {

@@ -99,6 +99,41 @@ assert.equal(syncApp.deadlineState(""), "unknown");
 assert.equal(syncApp.formatDate(""), "待公布");
 assert.equal(syncApp.calculateStats([mergedRecord]).dueSoon, 0);
 
+const mixedSyncApp = loadApp({
+  payload: {
+    schemaVersion: 1,
+    generatedAt: "2026-09-01T07:30:00+08:00",
+    records: [sourceRecord, { id: "invalid-sync-record" }],
+  },
+});
+assert.equal(mixedSyncApp.dataInfo.mode, "sync");
+assert.equal(mixedSyncApp.data.some((record) => record.id === sourceRecord.id && record.companyName === sourceRecord.companyName), true);
+
+const retiredSubmitted = {
+  ...app.initialRecords[1],
+  id: "sync-retired-submitted",
+  sourceKind: "sync",
+  sourceName: "旧同步源",
+  isDemo: false,
+  status: "已投递",
+  statusUpdatedAt: "2026-08-31T08:00:00+08:00",
+};
+const retiredNotApplied = {
+  ...app.initialRecords[2],
+  id: "sync-retired-not-applied",
+  sourceKind: "sync",
+  sourceName: "旧同步源",
+  isDemo: false,
+  status: "未投递",
+  statusUpdatedAt: "2026-08-31T08:05:00+08:00",
+};
+const historyApp = loadApp({
+  payload: { records: [sourceRecord] },
+  stored: JSON.stringify([retiredSubmitted, retiredNotApplied]),
+});
+assert.equal(historyApp.data.filter((record) => record.id === retiredSubmitted.id).length, 1);
+assert.equal(historyApp.data.some((record) => record.id === retiredNotApplied.id), false);
+
 assert.equal(app.resolveRecruitmentData({ records: [] }).info.mode, "example");
 assert.equal(app.resolveRecruitmentData({ records: [{ id: "bad" }] }).info.mode, "example");
 assert.equal(app.resolveRecruitmentData({ schemaVersion: 999, records: [sourceRecord] }).info.mode, "example");
