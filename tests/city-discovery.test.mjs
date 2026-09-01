@@ -10,6 +10,7 @@ const context = vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(path.join(ROOT, "data.js"), "utf8"), context);
 vm.runInContext(fs.readFileSync(path.join(ROOT, "app.js"), "utf8"), context);
 const app = context.AutumnRecruitmentApp;
+assert.equal(app.maxRenderedRecords, 80);
 
 const records = [
   {

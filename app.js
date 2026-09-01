@@ -22,6 +22,7 @@
   const DEFAULT_STATUS_UPDATED_AT = "1970-01-01T00:00:00.000Z";
   const EXAMPLE_SOURCE_NAME = "内置示例";
   const DEFAULT_SYNC_SOURCE_NAME = "自动同步源";
+  const MAX_RENDERED_RECORDS = 80;
 
   const STATUS_CLASS_NAMES = Object.freeze({
     未投递: "status-not-applied",
@@ -1013,9 +1014,12 @@
     if (dom.cityLastSync) dom.cityLastSync.textContent = formatSyncTime(summary.lastSyncAt);
   }
 
-  function updateResultsSummary(matchCount) {
+  function updateResultsSummary(matchCount, renderedCount = matchCount) {
     if (!dom.resultsCount) return;
-    dom.resultsCount.textContent = `共 ${matchCount} / ${state.records.length} 个岗位`;
+    const limitedNote = renderedCount < matchCount
+      ? ` · 当前展示前 ${renderedCount} 条，请继续筛选缩小范围`
+      : "";
+    dom.resultsCount.textContent = `共 ${matchCount} / ${state.records.length} 个岗位${limitedNote}`;
   }
 
   function updateEmptyState(isEmpty) {
@@ -1035,12 +1039,13 @@
 
   function renderResults() {
     const filteredRecords = filterRecords(state.records);
-    const visibleRecords = sortRecords(filteredRecords, state.sort);
-    updateResultsSummary(visibleRecords.length);
+    const matchingRecords = sortRecords(filteredRecords, state.sort);
+    const visibleRecords = matchingRecords.slice(0, MAX_RENDERED_RECORDS);
+    updateResultsSummary(matchingRecords.length, visibleRecords.length);
     updateDiscoverySummary(filteredRecords);
     renderTable(visibleRecords);
     renderMobileCards(visibleRecords);
-    const isEmpty = visibleRecords.length === 0;
+    const isEmpty = matchingRecords.length === 0;
     if (dom.desktopTableView) dom.desktopTableView.hidden = isEmpty;
     if (dom.mobileCardView) dom.mobileCardView.hidden = isEmpty;
     updateEmptyState(isEmpty);
@@ -1420,6 +1425,7 @@
     statusOptions,
     companyTypeOptions,
     storageKey,
+    maxRenderedRecords: MAX_RENDERED_RECORDS,
     calculateStats,
     calculateDiscoverySummary,
     deadlineState,

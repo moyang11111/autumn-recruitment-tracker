@@ -2000,8 +2000,9 @@ h1 span {
   }
 
   .discovery-metric-wide strong {
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 11px;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .city-discovery-reset {
