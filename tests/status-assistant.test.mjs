@@ -6,9 +6,10 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-function createStorage(initialValue = null) {
+function createStorage(initialValue = null, legacyValue = null) {
   const values = new Map();
-  if (initialValue !== null) values.set("autumn-recruitment-tracker:v1", initialValue);
+  if (initialValue !== null) values.set("autumn-recruitment-tracker:v2", initialValue);
+  if (legacyValue !== null) values.set("autumn-recruitment-tracker:v1", legacyValue);
   return {
     getItem(key) {
       return values.has(key) ? values.get(key) : null;
@@ -22,11 +23,11 @@ function createStorage(initialValue = null) {
   };
 }
 
-function loadApp({ payload, stored } = {}) {
+function loadApp({ payload, stored, legacyStored } = {}) {
   const sandbox = {
     URL,
     console,
-    localStorage: createStorage(stored),
+    localStorage: createStorage(stored, legacyStored),
     module: { exports: {} },
   };
   if (typeof payload !== "undefined") sandbox.RECRUITMENT_SYNC_PAYLOAD = payload;
@@ -98,6 +99,32 @@ assert.equal(mergedRecord.statusUpdatedAt, localProgress.statusUpdatedAt);
 assert.equal(syncApp.deadlineState(""), "unknown");
 assert.equal(syncApp.formatDate(""), "待公布");
 assert.equal(syncApp.calculateStats([mergedRecord]).dueSoon, 0);
+
+const legacySeededProgress = {
+  ...app.initialRecords[1],
+  status: "已投递",
+  statusUpdatedAt: "2026-08-30T14:20:00+08:00",
+};
+const migratedDefaults = loadApp({ legacyStored: JSON.stringify([legacySeededProgress]) });
+assert.equal(migratedDefaults.data.find((record) => record.id === legacySeededProgress.id).status, "未投递");
+
+const genuineManualProgress = {
+  ...legacySeededProgress,
+  status: "面试中",
+  statusUpdatedAt: "2026-09-01T13:45:00.000Z",
+};
+const preservedManual = loadApp({ stored: JSON.stringify([genuineManualProgress]) });
+assert.equal(preservedManual.data.find((record) => record.id === genuineManualProgress.id).status, "面试中");
+assert.equal(preservedManual.data.find((record) => record.id === genuineManualProgress.id).statusUpdatedAt, genuineManualProgress.statusUpdatedAt);
+
+const manuallyResetProgress = {
+  ...genuineManualProgress,
+  status: "未投递",
+  statusUpdatedAt: "2026-09-01T14:00:00.000Z",
+};
+const preservedManualReset = loadApp({ stored: JSON.stringify([manuallyResetProgress]) });
+assert.equal(preservedManualReset.data.find((record) => record.id === manuallyResetProgress.id).status, "未投递");
+assert.equal(preservedManualReset.data.find((record) => record.id === manuallyResetProgress.id).statusUpdatedAt, manuallyResetProgress.statusUpdatedAt);
 
 const mixedSyncApp = loadApp({
   payload: {

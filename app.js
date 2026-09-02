@@ -15,6 +15,10 @@
   const dataMeta = root.RECRUITMENT_DATA_META && typeof root.RECRUITMENT_DATA_META === "object"
     ? root.RECRUITMENT_DATA_META
     : {};
+  const domesticLocationSource = root.RECRUITMENT_DOMESTIC_LOCATIONS
+    && typeof root.RECRUITMENT_DOMESTIC_LOCATIONS === "object"
+    ? root.RECRUITMENT_DOMESTIC_LOCATIONS
+    : {};
   const storageKey = typeof dataMeta.storageKey === "string" && dataMeta.storageKey.trim()
     ? dataMeta.storageKey
     : "autumn-recruitment-tracker:v1";
@@ -23,6 +27,7 @@
   const EXAMPLE_SOURCE_NAME = "内置示例";
   const DEFAULT_SYNC_SOURCE_NAME = "自动同步源";
   const MAX_RENDERED_RECORDS = 80;
+  const LATEST_SNAPSHOT_URL = "data/jobs.generated.json";
 
   const STATUS_CLASS_NAMES = Object.freeze({
     未投递: "status-not-applied",
@@ -61,6 +66,16 @@
     },
     sort: "default",
     storageAvailable: false,
+    cityDraft: {
+      province: "",
+      city: "",
+    },
+    cityRequest: {
+      loading: false,
+      hasRequested: false,
+      lastError: "",
+      lastResultCount: 0,
+    },
   };
 
   const assistantState = {
@@ -357,6 +372,9 @@
     syncRecords.forEach((record) => {
       if (!record?.id) return;
       const previous = byId.get(record.id);
+      const mergedStatus = statusOptions.includes(record.status)
+        ? record.status
+        : (previous?.status || DEFAULT_STATUS);
       const merged = {
         ...(previous || {}),
         ...cloneRecord(record),
@@ -364,12 +382,12 @@
         sourceKind: "sync",
         sourceName: record.sourceName || DEFAULT_SYNC_SOURCE_NAME,
         lastSyncAt: record.lastSyncAt || "",
-        status: statusOptions.includes(record.status)
-          ? record.status
-          : (previous?.status || DEFAULT_STATUS),
-        statusUpdatedAt: isValidTimestamp(record.statusUpdatedAt)
+        status: mergedStatus,
+        statusUpdatedAt: mergedStatus === DEFAULT_STATUS
+          ? DEFAULT_STATUS_UPDATED_AT
+          : (isValidTimestamp(record.statusUpdatedAt)
           ? record.statusUpdatedAt
-          : (previous?.statusUpdatedAt || DEFAULT_STATUS_UPDATED_AT),
+          : (previous?.statusUpdatedAt || DEFAULT_STATUS_UPDATED_AT)),
       };
       byId.set(record.id, merged);
     });
@@ -441,6 +459,7 @@
       if (!stored || !statusOptions.includes(stored.status) || !isValidTimestamp(stored.statusUpdatedAt)) {
         return record;
       }
+      if (stored.status === DEFAULT_STATUS && stored.statusUpdatedAt === DEFAULT_STATUS_UPDATED_AT) return record;
       return {
         ...record,
         status: stored.status,
@@ -698,6 +717,7 @@
   }
 
   function formatUpdatedAt(value) {
+    if (value === DEFAULT_STATUS_UPDATED_AT) return "尚未更新";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "暂无记录";
     const year = date.getFullYear();
@@ -844,26 +864,40 @@
     select.replaceChildren(fragment);
   }
 
+  function availableDomesticLocations(records = state.records) {
+    const locationMap = new Map();
+    Object.entries(domesticLocationSource).forEach(([province, cities]) => {
+      if (!province || !Array.isArray(cities)) return;
+      locationMap.set(province, new Set(cities.filter((city) => typeof city === "string" && city.trim())));
+    });
+    (Array.isArray(records) ? records : []).forEach((record) => {
+      if (!record || !locationMap.has(record.province) || typeof record.city !== "string" || !record.city.trim()) return;
+      locationMap.get(record.province).add(record.city.trim());
+    });
+    return [...locationMap.entries()].map(([province, cities]) => ({
+      province,
+      cities: [...cities].sort((left, right) => compareText(left, right)),
+    }));
+  }
+
   function refreshLocationOptions() {
     if (!dom.provinceFilter || !dom.cityFilter) return;
-    const provinces = [...new Set(state.records.map((record) => record.province).filter(Boolean))]
-      .sort((left, right) => compareText(left, right));
-    const selectedProvince = provinces.includes(state.filters.province) ? state.filters.province : "";
-    const cities = [...new Set(state.records
-      .filter((record) => !selectedProvince || record.province === selectedProvince)
-      .map((record) => record.city)
-      .filter(Boolean))]
-      .sort((left, right) => compareText(left, right));
-    const selectedCity = cities.includes(state.filters.city) ? state.filters.city : "";
+    const locationOptions = availableDomesticLocations();
+    const provinces = locationOptions.map((item) => item.province);
+    const selectedProvince = provinces.includes(state.cityDraft.province) ? state.cityDraft.province : "";
+    const cities = locationOptions.find((item) => item.province === selectedProvince)?.cities || [];
+    const selectedCity = cities.includes(state.cityDraft.city) ? state.cityDraft.city : "";
 
-    state.filters.province = selectedProvince;
-    state.filters.city = selectedCity;
-    setSelectOptions(dom.provinceFilter, provinces, "全部省份");
-    setSelectOptions(dom.cityFilter, cities, "全部城市");
+    state.cityDraft.province = selectedProvince;
+    state.cityDraft.city = selectedCity;
+    setSelectOptions(dom.provinceFilter, provinces, "请选择省份");
+    setSelectOptions(dom.cityFilter, cities, "请选择城市");
     dom.provinceFilter.value = selectedProvince;
     dom.cityFilter.value = selectedCity;
-    dom.cityFilter.disabled = cities.length === 0;
-    dom.cityFilter.setAttribute("aria-disabled", String(cities.length === 0));
+    dom.cityFilter.disabled = !selectedProvince || cities.length === 0 || state.cityRequest.loading;
+    dom.cityFilter.setAttribute("aria-disabled", String(dom.cityFilter.disabled));
+    dom.provinceFilter.disabled = state.cityRequest.loading;
+    updateCityFetchState();
   }
 
   function populateEnumOptions() {
@@ -976,6 +1010,92 @@
     return isValidTimestamp(value) ? formatUpdatedAt(value) : "暂无";
   }
 
+  function updateCityFetchState() {
+    if (!hasDocument) return;
+    const hasCity = Boolean(state.cityDraft.province && state.cityDraft.city);
+    if (dom.cityFetchButton) {
+      dom.cityFetchButton.disabled = state.cityRequest.loading || !hasCity;
+      dom.cityFetchButton.classList.toggle("is-loading", state.cityRequest.loading);
+      dom.cityFetchButton.textContent = state.cityRequest.loading ? "正在获取…" : "获取该城市秋招";
+    }
+    if (!dom.cityFetchStatus) return;
+    if (state.cityRequest.loading) {
+      dom.cityFetchStatus.textContent = `正在读取 ${state.cityDraft.city} 的最新招聘快照，请稍候…`;
+    } else if (state.cityRequest.lastError) {
+      dom.cityFetchStatus.textContent = `最新快照读取失败，已显示本机最近数据：${state.cityRequest.lastError}`;
+    } else if (state.cityRequest.hasRequested) {
+      dom.cityFetchStatus.textContent = `已列出 ${state.filters.city} 的 ${state.cityRequest.lastResultCount} 条岗位；投递前请进入官网核验。`;
+    } else {
+      dom.cityFetchStatus.textContent = "请选择国内省份和城市，再点击获取信息。";
+    }
+  }
+
+  async function fetchLatestRecruitmentPayload(fetchImpl) {
+    const request = typeof fetchImpl === "function"
+      ? fetchImpl
+      : (typeof root.fetch === "function" ? root.fetch.bind(root) : null);
+    if (!request) throw new Error("当前浏览器不支持在线读取");
+    const separator = LATEST_SNAPSHOT_URL.includes("?") ? "&" : "?";
+    const response = await request(`${LATEST_SNAPSHOT_URL}${separator}t=${Date.now()}`, {
+      method: "GET",
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+    if (!response || response.ok !== true || typeof response.json !== "function") {
+      const status = response?.status ? `HTTP ${response.status}` : "请求失败";
+      throw new Error(status);
+    }
+    const payload = await response.json();
+    const resolved = resolveRecruitmentData(payload);
+    if (resolved.info.mode !== "sync" || resolved.syncRecords.length === 0) {
+      throw new Error("招聘快照为空或格式无效");
+    }
+    return { payload, resolved };
+  }
+
+  async function requestCityRecruitment(province, city, fetchImpl) {
+    const normalizedProvince = typeof province === "string" ? province.trim() : "";
+    const normalizedCity = typeof city === "string" ? city.trim() : "";
+    const validLocation = availableDomesticLocations().some((item) => (
+      item.province === normalizedProvince && item.cities.includes(normalizedCity)
+    ));
+    if (!validLocation) throw new Error("请先选择有效的国内省份和城市");
+
+    state.cityDraft.province = normalizedProvince;
+    state.cityDraft.city = normalizedCity;
+    state.cityRequest.loading = true;
+    state.cityRequest.lastError = "";
+    updateCityFetchState();
+    refreshLocationOptions();
+
+    let refreshed = false;
+    try {
+      const { resolved } = await fetchLatestRecruitmentPayload(fetchImpl);
+      const currentProgress = cloneRecords(state.records);
+      state.records = applyStoredProgress(cloneRecords(resolved.records), currentProgress);
+      state.dataInfo = resolved.info;
+      writeRecords(state.records);
+      refreshed = true;
+    } catch (error) {
+      state.cityRequest.lastError = error instanceof Error ? error.message : "未知错误";
+    }
+
+    state.filters.province = normalizedProvince;
+    state.filters.city = normalizedCity;
+    state.cityRequest.loading = false;
+    state.cityRequest.hasRequested = true;
+    const records = filterRecords(state.records, state.filters);
+    state.cityRequest.lastResultCount = records.length;
+    syncControls();
+    renderAll();
+    updateCityFetchState();
+    return {
+      records,
+      refreshed,
+      error: state.cityRequest.lastError,
+    };
+  }
+
   function calculateDiscoverySummary(records = state.records) {
     const sources = new Set(records.map((record) => sourceNameForRecord(record)).filter(Boolean));
     const recordSyncTime = records
@@ -1008,10 +1128,15 @@
     if (!hasDocument) return;
     const summary = calculateDiscoverySummary(records);
     const location = [summary.province, summary.city].filter(Boolean).join(" · ") || "全部城市";
-    if (dom.cityDiscoveryContext) dom.cityDiscoveryContext.textContent = `${location} · 可叠加其他筛选条件`;
+    if (dom.cityDiscoveryContext) {
+      dom.cityDiscoveryContext.textContent = state.cityRequest.hasRequested
+        ? `${location} · 可叠加其他筛选条件`
+        : "先选择国内城市，再点击获取信息";
+    }
     if (dom.cityMatchCount) dom.cityMatchCount.textContent = String(summary.matchCount);
     if (dom.citySourceCount) dom.citySourceCount.textContent = String(summary.sourceCount);
     if (dom.cityLastSync) dom.cityLastSync.textContent = formatSyncTime(summary.lastSyncAt);
+    updateCityFetchState();
   }
 
   function updateResultsSummary(matchCount, renderedCount = matchCount) {
@@ -1096,6 +1221,13 @@
       deadline: "",
       status: "",
     };
+    state.cityDraft = { province: "", city: "" };
+    state.cityRequest = {
+      loading: false,
+      hasRequested: false,
+      lastError: "",
+      lastResultCount: 0,
+    };
     syncControls();
     renderResults();
     if (showMessage) showToast("已清除全部筛选条件");
@@ -1104,6 +1236,11 @@
   function restoreAllCities(showMessage = true) {
     state.filters.province = "";
     state.filters.city = "";
+    state.cityDraft.province = "";
+    state.cityDraft.city = "";
+    state.cityRequest.hasRequested = false;
+    state.cityRequest.lastError = "";
+    state.cityRequest.lastResultCount = 0;
     syncControls();
     renderResults();
     if (showMessage) showToast("已恢复全部城市");
@@ -1138,10 +1275,26 @@
     if (!field) return;
     const name = field.dataset.filter;
     if (!Object.prototype.hasOwnProperty.call(state.filters, name)) return;
+    if (name === "province" || name === "city") {
+      state.cityDraft[name] = field.value;
+      if (name === "province") state.cityDraft.city = "";
+      refreshLocationOptions();
+      updateCityFetchState();
+      return;
+    }
     state.filters[name] = field.value;
-    if (name === "province") state.filters.city = "";
-    if (name === "province" || name === "city") refreshLocationOptions();
     renderResults();
+  }
+
+  async function handleCityFetch() {
+    try {
+      const result = await requestCityRecruitment(state.cityDraft.province, state.cityDraft.city);
+      showToast(result.refreshed
+        ? `已获取 ${state.filters.city} 的 ${result.records.length} 条岗位`
+        : `已显示 ${state.filters.city} 的本机最近数据`);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "请选择有效城市");
+    }
   }
 
   function updateStatus(recordId, nextStatus, sourceControl) {
@@ -1312,6 +1465,7 @@
     dom.emptyClearButton?.addEventListener("click", () => clearFilters(true));
     dom.restoreCitiesButton?.addEventListener("click", () => restoreAllCities(true));
     dom.emptyRestoreCitiesButton?.addEventListener("click", () => restoreAllCities(true));
+    dom.cityFetchButton?.addEventListener("click", handleCityFetch);
     dom.sortSelect?.addEventListener("change", (event) => {
       state.sort = event.target.value;
       renderResults();
@@ -1359,6 +1513,8 @@
       emptyClearButton: byId("emptyClearButton"),
       restoreCitiesButton: byId("restoreCitiesButton"),
       emptyRestoreCitiesButton: byId("emptyRestoreCitiesButton"),
+      cityFetchButton: byId("cityFetchButton"),
+      cityFetchStatus: byId("cityFetchStatus"),
       exportButton: byId("exportButton"),
       heroExportButton: byId("heroExportButton"),
       heroResetButton: byId("heroResetButton"),
@@ -1428,6 +1584,9 @@
     maxRenderedRecords: MAX_RENDERED_RECORDS,
     calculateStats,
     calculateDiscoverySummary,
+    availableDomesticLocations,
+    fetchLatestRecruitmentPayload,
+    requestCityRecruitment,
     deadlineState,
     formatDate,
     formatSyncTime,

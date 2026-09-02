@@ -18,11 +18,48 @@ const RECRUITMENT_STATUS_OPTIONS = [
 
 const RECRUITMENT_COMPANY_TYPES = ["央国企", "私企", "外企", "事业单位", "其他"];
 
+const RECRUITMENT_DOMESTIC_LOCATIONS = {
+  北京: ["北京"],
+  上海: ["上海"],
+  天津: ["天津"],
+  重庆: ["重庆"],
+  广东: ["广州", "深圳", "珠海", "佛山", "东莞", "惠州", "中山"],
+  浙江: ["杭州", "宁波", "温州", "嘉兴", "绍兴", "金华"],
+  江苏: ["南京", "苏州", "无锡", "常州", "南通", "徐州"],
+  福建: ["福州", "厦门", "泉州", "漳州", "宁德"],
+  湖北: ["武汉", "宜昌", "襄阳"],
+  湖南: ["长沙", "株洲", "湘潭"],
+  四川: ["成都", "绵阳", "德阳"],
+  陕西: ["西安", "咸阳", "宝鸡"],
+  山东: ["济南", "青岛", "烟台", "潍坊", "威海"],
+  河南: ["郑州", "洛阳", "开封"],
+  河北: ["石家庄", "保定", "唐山", "廊坊"],
+  辽宁: ["沈阳", "大连", "鞍山"],
+  吉林: ["长春", "吉林"],
+  黑龙江: ["哈尔滨", "大庆"],
+  安徽: ["合肥", "芜湖", "蚌埠"],
+  江西: ["南昌", "赣州", "九江"],
+  广西: ["南宁", "柳州", "桂林"],
+  云南: ["昆明", "曲靖", "大理"],
+  贵州: ["贵阳", "遵义"],
+  海南: ["海口", "三亚"],
+  山西: ["太原", "大同"],
+  内蒙古: ["呼和浩特", "包头", "鄂尔多斯"],
+  甘肃: ["兰州", "嘉峪关"],
+  新疆: ["乌鲁木齐", "克拉玛依"],
+  西藏: ["拉萨"],
+  青海: ["西宁"],
+  宁夏: ["银川"],
+  香港: ["香港"],
+  澳门: ["澳门"],
+  台湾: ["台北", "新北", "台中", "高雄"],
+};
+
 const RECRUITMENT_DATA_META = {
   isDemo: true,
   dateNote: "开放时间与截止时间为模拟的 2026 秋招日期，请以企业官方页面为准。",
-  storageKey: "autumn-recruitment-tracker:v1",
-  schemaVersion: 1,
+  storageKey: "autumn-recruitment-tracker:v2",
+  schemaVersion: 2,
 };
 
 const INITIAL_RECRUITMENT_DATA = [
@@ -37,7 +74,7 @@ const INITIAL_RECRUITMENT_DATA = [
     categories: ["电气工程", "电力系统", "信息技术", "综合管理"],
     campusUrl: "https://zhaopin.sgcc.com.cn/",
     status: "未投递",
-    statusUpdatedAt: "2026-08-31T09:00:00+08:00",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -50,8 +87,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "北京",
     categories: ["石油工程", "化学工程", "机械工程", "综合管理"],
     campusUrl: "https://job.cnpc.com.cn/",
-    status: "已投递",
-    statusUpdatedAt: "2026-08-30T14:20:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -64,8 +101,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "北京",
     categories: ["通信工程", "计算机", "产品运营", "市场营销"],
     campusUrl: "https://job.10086.cn/",
-    status: "筛选中",
-    statusUpdatedAt: "2026-08-29T10:15:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -78,8 +115,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "北京",
     categories: ["工程管理", "土木工程", "建筑设计", "财务管理"],
     campusUrl: "https://job.cscec.com/",
-    status: "笔试 / 测评中",
-    statusUpdatedAt: "2026-08-31T16:40:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -92,8 +129,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "深圳",
     categories: ["战略投资", "商业管理", "医药健康", "信息技术"],
     campusUrl: "https://campus.crc.com.cn/",
-    status: "面试中",
-    statusUpdatedAt: "2026-08-28T18:10:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -106,8 +143,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "北京",
     categories: ["化工技术", "炼化工程", "新能源", "财务审计"],
     campusUrl: "https://job.sinopec.com/",
-    status: "已发 offer",
-    statusUpdatedAt: "2026-08-27T11:30:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -120,8 +157,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "北京",
     categories: ["海洋工程", "石油工程", "安全环保", "法务管理"],
     campusUrl: "https://job.cnooc.com.cn/",
-    status: "终止流程 / 已淘汰",
-    statusUpdatedAt: "2026-08-31T13:05:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -134,8 +171,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "广州",
     categories: ["电气工程", "数字化技术", "调度运行", "人力资源"],
     campusUrl: "https://zhaopin.csg.cn/",
-    status: "已接受 / 已拒绝 offer",
-    statusUpdatedAt: "2026-08-26T09:45:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -149,7 +186,7 @@ const INITIAL_RECRUITMENT_DATA = [
     categories: ["工程技术", "轨道交通", "项目管理", "商务合约"],
     campusUrl: "https://job.crec.cn/",
     status: "未投递",
-    statusUpdatedAt: "2026-08-31T09:10:00+08:00",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -162,8 +199,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "北京",
     categories: ["能源动力", "采矿工程", "智能制造", "经济管理"],
     campusUrl: "https://zhaopin.chnenergy.com.cn/",
-    status: "已投递",
-    statusUpdatedAt: "2026-08-31T15:00:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -176,8 +213,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "深圳",
     categories: ["软件开发", "产品经理", "游戏研发", "设计"],
     campusUrl: "https://join.qq.com/",
-    status: "筛选中",
-    statusUpdatedAt: "2026-08-30T10:00:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -190,8 +227,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "北京",
     categories: ["后端开发", "算法", "产品运营", "内容策略"],
     campusUrl: "https://jobs.bytedance.com/campus/",
-    status: "笔试 / 测评中",
-    statusUpdatedAt: "2026-08-29T20:25:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -204,8 +241,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "深圳",
     categories: ["软件开发", "芯片与器件", "通信技术", "销售管理"],
     campusUrl: "https://career.huawei.com/reccampportal/portal5/index.html",
-    status: "面试中",
-    statusUpdatedAt: "2026-08-31T18:00:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -218,8 +255,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "北京",
     categories: ["软件开发", "数据分析", "产品经理", "商业分析"],
     campusUrl: "https://campus.meituan.com/",
-    status: "已发 offer",
-    statusUpdatedAt: "2026-08-28T16:00:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -233,7 +270,7 @@ const INITIAL_RECRUITMENT_DATA = [
     categories: ["供应链管理", "软件开发", "物流运营", "产品运营"],
     campusUrl: "https://campus.jd.com/",
     status: "未投递",
-    statusUpdatedAt: "2026-08-31T08:30:00+08:00",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -246,8 +283,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "深圳",
     categories: ["车辆工程", "电池研发", "智能驾驶", "制造工程"],
     campusUrl: "https://job.byd.com/",
-    status: "已投递",
-    statusUpdatedAt: "2026-08-30T12:40:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -260,8 +297,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "杭州",
     categories: ["软件开发", "算法", "产品经理", "用户研究"],
     campusUrl: "https://campus.alibaba.com/",
-    status: "筛选中",
-    statusUpdatedAt: "2026-08-31T19:15:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -275,7 +312,7 @@ const INITIAL_RECRUITMENT_DATA = [
     categories: ["嵌入式开发", "互联网产品", "工业设计", "市场营销"],
     campusUrl: "https://hr.xiaomi.com/",
     status: "未投递",
-    statusUpdatedAt: "2026-08-31T08:50:00+08:00",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -288,8 +325,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "宁德",
     categories: ["电化学", "材料研发", "电气工程", "质量工程"],
     campusUrl: "https://hr.catl.com/",
-    status: "笔试 / 测评中",
-    statusUpdatedAt: "2026-08-31T17:20:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -303,7 +340,7 @@ const INITIAL_RECRUITMENT_DATA = [
     categories: ["后端开发", "算法", "数据产品", "运营管理"],
     campusUrl: "https://jobs.pinduoduo.com/",
     status: "未投递",
-    statusUpdatedAt: "2026-08-31T09:25:00+08:00",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -316,8 +353,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "北京",
     categories: ["自动化工程", "数字化工业", "项目管理", "销售工程"],
     campusUrl: "https://www.siemens.com/cn/zh/company/jobs.html",
-    status: "已投递",
-    statusUpdatedAt: "2026-08-30T09:10:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -330,8 +367,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "上海",
     categories: ["汽车电子", "软件开发", "机械工程", "供应链"],
     campusUrl: "https://www.bosch.com.cn/careers/",
-    status: "筛选中",
-    statusUpdatedAt: "2026-08-31T10:35:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -345,7 +382,7 @@ const INITIAL_RECRUITMENT_DATA = [
     categories: ["管理咨询", "商业分析", "数字化咨询"],
     campusUrl: "https://www.mckinsey.com.cn/careers/",
     status: "未投递",
-    statusUpdatedAt: "2026-08-31T11:00:00+08:00",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
   {
@@ -358,8 +395,8 @@ const INITIAL_RECRUITMENT_DATA = [
     city: "上海",
     categories: ["管理培训生", "市场营销", "供应链", "财务"],
     campusUrl: "https://careers.unilever.com/china/",
-    status: "已投递",
-    statusUpdatedAt: "2026-08-30T13:50:00+08:00",
+    status: "未投递",
+    statusUpdatedAt: "1970-01-01T00:00:00.000Z",
     isDemo: true,
   },
 ];
@@ -369,6 +406,7 @@ globalThis.INITIAL_RECRUITMENT_DATA = INITIAL_RECRUITMENT_DATA;
 globalThis.RECRUITMENT_STATUS_OPTIONS = RECRUITMENT_STATUS_OPTIONS;
 globalThis.RECRUITMENT_COMPANY_TYPES = RECRUITMENT_COMPANY_TYPES;
 globalThis.RECRUITMENT_DATA_META = RECRUITMENT_DATA_META;
+globalThis.RECRUITMENT_DOMESTIC_LOCATIONS = RECRUITMENT_DOMESTIC_LOCATIONS;
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
@@ -376,5 +414,6 @@ if (typeof module !== "undefined" && module.exports) {
     RECRUITMENT_STATUS_OPTIONS,
     RECRUITMENT_COMPANY_TYPES,
     RECRUITMENT_DATA_META,
+    RECRUITMENT_DOMESTIC_LOCATIONS,
   };
 }

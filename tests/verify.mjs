@@ -89,7 +89,6 @@ function validateData(context) {
 
   assert(data.length >= 15, `初始化数据至少需要 15 条，当前为 ${data.length} 条`);
   const ids = new Set();
-  const seenStatuses = new Set();
 
   for (const [index, item] of data.entries()) {
     const prefix = `第 ${index + 1} 条`;
@@ -121,7 +120,7 @@ function validateData(context) {
     }
     assert(isValidUrl(item.campusUrl), `${prefix} campusUrl 必须是 HTTPS URL：${item.campusUrl}`);
     assert(STATUSES.has(item.status), `${prefix} status 无效：${item.status}`);
-    if (STATUSES.has(item.status)) seenStatuses.add(item.status);
+    assert(item.status === "未投递", `${prefix} 初始状态必须为“未投递”：${item.status}`);
     assert(typeof item.statusUpdatedAt === "string" && !Number.isNaN(Date.parse(item.statusUpdatedAt)), `${prefix} statusUpdatedAt 不是有效时间`);
     assert(item.isDemo === true, `${prefix} isDemo 必须为 true，以标记模拟数据`);
   }
@@ -129,14 +128,12 @@ function validateData(context) {
   for (const company of REQUIRED_COMPANIES) {
     assert(data.some((item) => typeof item?.companyName === "string" && item.companyName.includes(company)), `缺少必需企业：${company}`);
   }
-  for (const status of STATUSES) {
-    assert(seenStatuses.has(status), `示例数据未覆盖状态：${status}`);
-  }
-
   const meta = context.RECRUITMENT_DATA_META;
   assert(meta && meta.isDemo === true, "RECRUITMENT_DATA_META.isDemo 必须为 true");
   assert(typeof meta?.dateNote === "string" && meta.dateNote.includes("模拟"), "需要提供模拟日期提示元数据");
   assert(typeof meta?.storageKey === "string" && meta.storageKey.length > 0, "需要提供 localStorage storageKey 元数据");
+  assert(meta?.storageKey === "autumn-recruitment-tracker:v2", "新版应使用独立的 v2 本地存储，避免旧演示进度覆盖默认状态");
+  assert(meta?.schemaVersion === 2, "RECRUITMENT_DATA_META.schemaVersion 应为 2");
 }
 
 function readIfExists(fileName) {

@@ -1643,6 +1643,39 @@ h1 span {
   background: rgba(255, 255, 255, 0.8);
 }
 
+.city-discovery-actions {
+  display: grid;
+  min-width: 180px;
+  gap: 7px;
+}
+
+.city-fetch-button,
+.city-discovery-reset {
+  width: 100%;
+}
+
+.city-fetch-button.is-loading::before {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  content: "";
+  animation: city-fetch-spin 700ms linear infinite;
+}
+
+.city-fetch-status {
+  max-width: 220px;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+@keyframes city-fetch-spin {
+  to { transform: rotate(360deg); }
+}
+
 .status-assistant {
   margin-top: 16px;
   padding: 19px;
@@ -1884,6 +1917,10 @@ h1 span {
     justify-content: space-between;
   }
 
+  .city-discovery-actions {
+    align-self: stretch;
+  }
+
   .status-assistant-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2007,6 +2044,15 @@ h1 span {
 
   .city-discovery-reset {
     width: 100%;
+  }
+
+  .city-discovery-actions {
+    width: 100%;
+  }
+
+  .city-fetch-status {
+    max-width: none;
+    text-align: center;
   }
 
   .status-assistant {

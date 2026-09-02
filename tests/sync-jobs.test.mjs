@@ -138,7 +138,7 @@ test("正常同步 Greenhouse 与 Lever，规范化字段并忽略危险岗位�
   assert.equal(greenhouseRecord.openDate, "", "只有 created_at 时不能伪造开放日期");
   assert.equal(greenhouseRecord.deadline, "", "来源没有截止日期时应为空");
   assert.equal(greenhouseRecord.status, "未投递");
-  assert.equal(greenhouseRecord.statusUpdatedAt, NOW);
+  assert.equal(greenhouseRecord.statusUpdatedAt, "1970-01-01T00:00:00.000Z");
   assert.deepEqual({ province: leverRecord.province, city: leverRecord.city }, { province: "浙江", city: "杭州" });
   assert.deepEqual(leverRecord.jobCategories, ["Engineering", "Product"]);
   assert.equal(payload.records.some((record) => record.id.includes("102")), false);

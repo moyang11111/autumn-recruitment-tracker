@@ -174,15 +174,15 @@
                 </select>
               </label>
               <label class="field">
-                <span class="field-label">省份</span>
+                <span class="field-label">国内省份</span>
                 <select id="provinceFilter" data-filter="province">
-                  <option value="">全部省份</option>
+                  <option value="">请选择省份</option>
                 </select>
               </label>
               <label class="field">
-                <span class="field-label">城市</span>
+                <span class="field-label">目标城市</span>
                 <select id="cityFilter" data-filter="city" disabled>
-                  <option value="">全部城市</option>
+                  <option value="">请选择城市</option>
                 </select>
               </label>
               <label class="field">
@@ -206,8 +206,8 @@
           <section class="city-discovery" id="cityDiscovery" aria-labelledby="cityDiscoveryTitle">
             <div class="city-discovery-copy">
               <p class="eyebrow">City discovery</p>
-              <h3 id="cityDiscoveryTitle">城市职位发现</h3>
-              <p id="cityDiscoveryContext">全部城市 · 可叠加其他筛选条件</p>
+              <h3 id="cityDiscoveryTitle">按城市获取秋招</h3>
+              <p id="cityDiscoveryContext">先选择国内城市，再点击获取信息</p>
             </div>
             <div class="city-discovery-metrics" aria-live="polite" aria-atomic="true">
               <div class="discovery-metric">
@@ -223,9 +223,17 @@
                 <strong id="cityLastSync">—</strong>
               </div>
             </div>
-            <button class="button button-quiet city-discovery-reset" id="restoreCitiesButton" type="button">
-              恢复全部城市
-            </button>
+            <div class="city-discovery-actions">
+              <button class="button button-primary city-fetch-button" id="cityFetchButton" type="button" disabled>
+                获取该城市秋招
+              </button>
+              <button class="button button-quiet city-discovery-reset" id="restoreCitiesButton" type="button">
+                恢复全部城市
+              </button>
+              <p class="city-fetch-status" id="cityFetchStatus" role="status" aria-live="polite">
+                请选择国内省份和城市，再点击获取信息。
+              </p>
+            </div>
           </section>
 
           <section class="status-assistant" aria-labelledby="statusAssistantTitle">

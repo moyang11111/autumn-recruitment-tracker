@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 export const SCHEMA_VERSION = 1;
 export const DEFAULT_STATUS = "未投递";
+export const DEFAULT_STATUS_UPDATED_AT = "1970-01-01T00:00:00.000Z";
 export const DEFAULT_TIMEOUT_MS = 15_000;
 
 export const VALID_STATUSES = new Set([
@@ -576,6 +577,9 @@ export function normalizeCity(value, fallbackProvince = "", fallbackCity = "") {
 function normalizeRecordState(previousRecord, now) {
   const previousStatus = text(previousRecord?.status);
   const status = VALID_STATUSES.has(previousStatus) ? previousStatus : DEFAULT_STATUS;
+  if (status === DEFAULT_STATUS) {
+    return { status, statusUpdatedAt: DEFAULT_STATUS_UPDATED_AT };
+  }
   const previousUpdatedAt = text(previousRecord?.statusUpdatedAt);
   const statusUpdatedAt = previousUpdatedAt && !Number.isNaN(Date.parse(previousUpdatedAt))
     ? previousUpdatedAt
