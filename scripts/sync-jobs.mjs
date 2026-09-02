@@ -20,7 +20,7 @@ export const VALID_STATUSES = new Set([
 ]);
 
 export const VALID_COMPANY_TYPES = new Set(["央国企", "私企", "外企", "事业单位", "其他"]);
-export const VALID_SOURCE_TYPES = new Set(["greenhouse", "lever"]);
+export const VALID_SOURCE_TYPES = new Set(["greenhouse", "lever", "community-json"]);
 
 const CONTRACT_RECORD_KEYS = [
   "id",
@@ -57,40 +57,85 @@ const CITY_PROVINCE_PAIRS = [
   ["浙江", "杭州", ["杭州", "杭州市", "hangzhou"]],
   ["浙江", "宁波", ["宁波", "宁波市", "ningbo"]],
   ["浙江", "温州", ["温州", "温州市", "wenzhou"]],
+  ["浙江", "嘉兴", ["嘉兴", "嘉兴市", "jiaxing"]],
+  ["浙江", "绍兴", ["绍兴", "绍兴市", "shaoxing"]],
+  ["浙江", "金华", ["金华", "金华市", "jinhua"]],
   ["江苏", "南京", ["南京", "南京市", "nanjing"]],
   ["江苏", "苏州", ["苏州", "苏州市", "suzhou"]],
   ["江苏", "无锡", ["无锡", "无锡市", "wuxi"]],
+  ["江苏", "常州", ["常州", "常州市", "changzhou"]],
+  ["江苏", "南通", ["南通", "南通市", "nantong"]],
+  ["江苏", "徐州", ["徐州", "徐州市", "xuzhou"]],
   ["福建", "福州", ["福州", "福州市", "fuzhou"]],
   ["福建", "厦门", ["厦门", "厦门市", "xiamen"]],
+  ["福建", "泉州", ["泉州", "泉州市", "quanzhou"]],
+  ["福建", "漳州", ["漳州", "漳州市", "zhangzhou"]],
   ["福建", "宁德", ["宁德", "宁德市", "ningde"]],
   ["湖北", "武汉", ["武汉", "武汉市", "wuhan"]],
+  ["湖北", "宜昌", ["宜昌", "宜昌市", "yichang"]],
+  ["湖北", "襄阳", ["襄阳", "襄阳市", "xiangyang"]],
   ["湖南", "长沙", ["长沙", "长沙市", "changsha"]],
+  ["湖南", "株洲", ["株洲", "株洲市", "zhuzhou"]],
+  ["湖南", "湘潭", ["湘潭", "湘潭市", "xiangtan"]],
   ["四川", "成都", ["成都", "成都市", "chengdu"]],
+  ["四川", "绵阳", ["绵阳", "绵阳市", "mianyang"]],
+  ["四川", "德阳", ["德阳", "德阳市", "deyang"]],
   ["陕西", "西安", ["西安", "西安市", "xian"]],
+  ["陕西", "咸阳", ["咸阳", "咸阳市", "xianyang"]],
+  ["陕西", "宝鸡", ["宝鸡", "宝鸡市", "baoji"]],
   ["山东", "济南", ["济南", "济南市", "jinan"]],
   ["山东", "青岛", ["青岛", "青岛市", "qingdao"]],
+  ["山东", "烟台", ["烟台", "烟台市", "yantai"]],
+  ["山东", "潍坊", ["潍坊", "潍坊市", "weifang"]],
+  ["山东", "威海", ["威海", "威海市", "weihai"]],
   ["河南", "郑州", ["郑州", "郑州市", "zhengzhou"]],
+  ["河南", "洛阳", ["洛阳", "洛阳市", "luoyang"]],
+  ["河南", "开封", ["开封", "开封市", "kaifeng"]],
   ["河北", "石家庄", ["石家庄", "石家庄市", "shijiazhuang"]],
+  ["河北", "保定", ["保定", "保定市", "baoding"]],
+  ["河北", "唐山", ["唐山", "唐山市", "tangshan"]],
+  ["河北", "廊坊", ["廊坊", "廊坊市", "langfang"]],
   ["辽宁", "沈阳", ["沈阳", "沈阳市", "shenyang"]],
   ["辽宁", "大连", ["大连", "大连市", "dalian"]],
+  ["辽宁", "鞍山", ["鞍山", "鞍山市", "anshan"]],
   ["吉林", "长春", ["长春", "长春市", "changchun"]],
+  ["吉林", "吉林", ["吉林市", "jilin"]],
   ["黑龙江", "哈尔滨", ["哈尔滨", "哈尔滨市", "harbin"]],
+  ["黑龙江", "大庆", ["大庆", "大庆市", "daqing"]],
   ["安徽", "合肥", ["合肥", "合肥市", "hefei"]],
+  ["安徽", "芜湖", ["芜湖", "芜湖市", "wuhu"]],
+  ["安徽", "蚌埠", ["蚌埠", "蚌埠市", "bengbu"]],
   ["江西", "南昌", ["南昌", "南昌市", "nanchang"]],
+  ["江西", "赣州", ["赣州", "赣州市", "ganzhou"]],
+  ["江西", "九江", ["九江", "九江市", "jiujiang"]],
   ["广西", "南宁", ["南宁", "南宁市", "nanning"]],
+  ["广西", "柳州", ["柳州", "柳州市", "liuzhou"]],
+  ["广西", "桂林", ["桂林", "桂林市", "guilin"]],
   ["云南", "昆明", ["昆明", "昆明市", "kunming"]],
+  ["云南", "曲靖", ["曲靖", "曲靖市", "qujing"]],
+  ["云南", "大理", ["大理", "大理市", "dali"]],
   ["贵州", "贵阳", ["贵阳", "贵阳市", "guiyang"]],
+  ["贵州", "遵义", ["遵义", "遵义市", "zunyi"]],
   ["海南", "海口", ["海口", "海口市", "haikou"]],
+  ["海南", "三亚", ["三亚", "三亚市", "sanya"]],
   ["山西", "太原", ["太原", "太原市", "taiyuan"]],
+  ["山西", "大同", ["大同", "大同市", "datong"]],
   ["内蒙古", "呼和浩特", ["呼和浩特", "呼和浩特市", "hohhot"]],
+  ["内蒙古", "包头", ["包头", "包头市", "baotou"]],
+  ["内蒙古", "鄂尔多斯", ["鄂尔多斯", "鄂尔多斯市", "ordos"]],
   ["甘肃", "兰州", ["兰州", "兰州市", "lanzhou"]],
+  ["甘肃", "嘉峪关", ["嘉峪关", "嘉峪关市", "jiayuguan"]],
   ["新疆", "乌鲁木齐", ["乌鲁木齐", "乌鲁木齐市", "urumqi"]],
+  ["新疆", "克拉玛依", ["克拉玛依", "克拉玛依市", "karamay"]],
   ["西藏", "拉萨", ["拉萨", "拉萨市", "lhasa"]],
   ["青海", "西宁", ["西宁", "西宁市", "xining"]],
   ["宁夏", "银川", ["银川", "银川市", "yinchuan"]],
   ["香港", "香港", ["香港", "香港特别行政区", "hong kong", "hongkong"]],
   ["澳门", "澳门", ["澳门", "澳门特别行政区", "macau", "macao"]],
   ["台湾", "台北", ["台北", "台北市", "taipei"]],
+  ["台湾", "新北", ["新北", "新北市", "new taipei"]],
+  ["台湾", "台中", ["台中", "台中市", "taichung"]],
+  ["台湾", "高雄", ["高雄", "高雄市", "kaohsiung"]],
   ["纽约", "纽约", ["new york", "new york city"]],
   ["加利福尼亚", "旧金山", ["旧金山", "san francisco"]],
   ["华盛顿州", "西雅图", ["西雅图", "seattle"]],
@@ -352,6 +397,10 @@ function sourceEndpoint(source) {
     return `https://api.lever.co/v0/postings/${encodeURIComponent(source.site)}?mode=json`;
   }
 
+  if (source.type === "community-json") {
+    throw new Error("社区聚合来源缺少 endpoint");
+  }
+
   throw new Error(`不支持的来源类型：${source.type || "空"}`);
 }
 
@@ -429,7 +478,7 @@ function explicitDate(job, keys, labels) {
 }
 
 function sourceUpdatedAt(job) {
-  for (const key of ["updated_at", "updatedAt", "last_updated_at", "lastUpdatedAt", "modified_at", "modifiedAt"]) {
+  for (const key of ["updated_at", "updatedAt", "last_updated_at", "lastUpdatedAt", "modified_at", "modifiedAt", "_feedUpdatedAt"]) {
     if (job && Object.prototype.hasOwnProperty.call(job, key)) {
       const timestamp = normalizeTimestamp(job[key]);
       if (timestamp) return timestamp;
@@ -458,6 +507,10 @@ function leverLocation(job) {
   return firstValue(...values);
 }
 
+function communityLocation(job) {
+  return firstValue(job?.l, job?.location, job?.city, job?.workLocation, job?.work_location);
+}
+
 function rawJobCategories(job, source) {
   if (source.type === "greenhouse") {
     return [
@@ -480,6 +533,10 @@ function rawJobCategories(job, source) {
     ];
   }
 
+  if (source.type === "community-json") {
+    return [job?.p, job?.ind, job?.w, ...source.categoryDefaults];
+  }
+
   return source.categoryDefaults;
 }
 
@@ -489,6 +546,9 @@ function rawJobUrl(job, source) {
   }
   if (source.type === "lever") {
     return firstValue(job?.hostedUrl, job?.hosted_url, job?.applyUrl, job?.apply_url, job?.url);
+  }
+  if (source.type === "community-json") {
+    return firstValue(job?.u, job?.url, job?.jobUrl, job?.job_url);
   }
   return firstValue(job?.url, job?.jobUrl, job?.job_url);
 }
@@ -574,6 +634,32 @@ export function normalizeCity(value, fallbackProvince = "", fallbackCity = "") {
   return normalizeLocation(value, fallbackProvince, fallbackCity);
 }
 
+export function normalizeLocations(value, fallbackProvince = "", fallbackCity = "") {
+  const raw = rawLocationText(value);
+  const tokens = raw
+    .normalize("NFKC")
+    .replace(/[，,、|/\\;；]+/g, "|")
+    .split("|")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const candidates = tokens.length > 0 ? tokens : [raw];
+  const locations = [];
+  const seen = new Set();
+
+  for (const candidate of candidates) {
+    const location = normalizeLocation(candidate, fallbackProvince, fallbackCity);
+    if (!location.city) continue;
+    const key = `${location.province}\u0000${location.city}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    locations.push(location);
+  }
+
+  if (locations.length > 0) return locations;
+  const fallback = normalizeLocation(value, fallbackProvince, fallbackCity);
+  return fallback.province || fallback.city ? [fallback] : [{ province: "", city: "" }];
+}
+
 function normalizeRecordState(previousRecord, now) {
   const previousStatus = text(previousRecord?.status);
   const status = VALID_STATUSES.has(previousStatus) ? previousStatus : DEFAULT_STATUS;
@@ -636,38 +722,84 @@ function setDedupeUrl(record, value) {
   return record;
 }
 
-export function normalizeJob(job, sourceInput, nowInput) {
-  const source = sourceInput?.raw ? sourceInput : normalizeSource(sourceInput);
-  const now = requireTimestamp(nowInput ?? new Date());
+function setStateKey(record, value) {
+  Object.defineProperty(record, "__stateKey", {
+    value: text(value),
+    enumerable: false,
+    configurable: true,
+  });
+  return record;
+}
+
+function communityStateKey(source, record, candidateUrl) {
+  const url = canonicalUrl(candidateUrl);
+  const sourceUrl = canonicalUrl(source.campusUrl);
+  if (source.type === "community-json" && url && url !== sourceUrl) {
+    return [
+      "community-url",
+      source.id,
+      record.companyName,
+      record.province,
+      record.city,
+      url,
+    ].join("\u0000");
+  }
+  return `record-id:${source.id}\u0000${record.id}`;
+}
+
+function communityCompanyType(job, fallback) {
+  const marker = text(firstValue(job?.companyType, job?.ownership, job?.t));
+  if (/央企|国企|国有企业/.test(marker)) return "央国企";
+  if (/外企|外资/.test(marker)) return "外企";
+  if (/事业单位|高校|研究所/.test(marker)) return "事业单位";
+  if (/私企|民企|民营/.test(marker)) return "私企";
+  return fallback;
+}
+
+function normalizeJobAtLocation(job, source, now, location) {
   const raw = job && typeof job === "object" ? job : {};
   const candidateUrl = rawJobUrl(raw, source);
-  const meaningfulJob = rawJobId(raw) !== undefined
-    || text(candidateUrl)
-    || text(firstValue(raw.title, raw.text, raw.name));
+  const title = firstValue(raw.title, raw.text, raw.name, raw.p);
+  const rawCompanyName = firstValue(raw.c, raw.companyName, raw.company);
+  if (source.type === "community-json" && (!text(rawCompanyName) || !text(title))) return null;
+  const companyName = source.type === "community-json"
+    ? text(firstValue(rawCompanyName, source.companyName))
+    : source.companyName;
+  const companyType = source.type === "community-json"
+    ? communityCompanyType(raw, source.companyType)
+    : source.companyType;
+  const meaningfulJob = rawJobId(raw) !== undefined || text(candidateUrl) || text(title)
+    || (source.type !== "community-json" && companyName);
   if (!meaningfulJob) return null;
   const campusUrl = candidateUrl === undefined || candidateUrl === null || text(candidateUrl) === ""
     ? source.campusUrl
     : safeUrl(candidateUrl);
-  if (!campusUrl) return null;
+  if (!campusUrl || !companyName) return null;
 
-  const locationValue = source.type === "greenhouse" ? greenhouseLocation(raw) : leverLocation(raw);
-  const location = normalizeLocation(locationValue, source.defaultProvince, source.defaultCity);
   const fallbackKey = [
-    text(firstValue(raw.title, raw.text, raw.name)),
+    companyName,
+    text(title),
     campusUrl,
     location.province,
     location.city,
     cleanList([rawJobCategories(raw, source)]).join("|"),
   ].join("|");
-  const id = stableRecordId(source.id, rawJobId(raw), fallbackKey);
+  const upstreamId = rawJobId(raw);
+  const idKey = source.type === "community-json" && upstreamId !== undefined
+    ? `${text(upstreamId)}|${location.province}|${location.city}`
+    : upstreamId;
+  const id = stableRecordId(source.id, idKey, fallbackKey);
   const state = normalizeRecordState(null, now);
+  const deadline = source.type === "community-json"
+    ? normalizeDateOnly(firstValue(raw.d, raw.deadline, raw.closeDate))
+    : explicitDate(raw, DEADLINE_KEYS, ["deadline", "close date", "closing date", "end date", "application deadline", "截止日期"]);
 
-  return setDedupeUrl(buildRecord({
+  const record = buildRecord({
     id,
-    companyName: source.companyName,
-    companyType: source.companyType,
+    companyName,
+    companyType,
     openDate: explicitDate(raw, OPEN_DATE_KEYS, ["open date", "opening date", "start date", "posted date", "date posted", "开放日期", "开始日期"]),
-    deadline: explicitDate(raw, DEADLINE_KEYS, ["deadline", "close date", "closing date", "end date", "application deadline", "截止日期"]),
+    deadline,
     province: location.province,
     city: location.city,
     jobCategories: rawJobCategories(raw, source),
@@ -680,7 +812,28 @@ export function normalizeJob(job, sourceInput, nowInput) {
     status: state.status,
     statusUpdatedAt: state.statusUpdatedAt,
     isDemo: false,
-  }), candidateUrl ? campusUrl : "");
+  });
+  setStateKey(record, communityStateKey(source, record, candidateUrl));
+  return setDedupeUrl(record, source.type === "community-json" ? "" : (candidateUrl ? campusUrl : ""));
+}
+
+export function normalizeJobs(job, sourceInput, nowInput) {
+  const source = sourceInput?.raw ? sourceInput : normalizeSource(sourceInput);
+  const now = requireTimestamp(nowInput ?? new Date());
+  const raw = job && typeof job === "object" ? job : {};
+  const locationValue = source.type === "greenhouse"
+    ? greenhouseLocation(raw)
+    : (source.type === "lever" ? leverLocation(raw) : communityLocation(raw));
+  const locations = source.type === "community-json"
+    ? normalizeLocations(locationValue, source.defaultProvince, source.defaultCity)
+    : [normalizeLocation(locationValue, source.defaultProvince, source.defaultCity)];
+  return locations
+    .map((location) => normalizeJobAtLocation(raw, source, now, location))
+    .filter(Boolean);
+}
+
+export function normalizeJob(job, sourceInput, nowInput) {
+  return normalizeJobs(job, sourceInput, nowInput)[0] ?? null;
 }
 
 function normalizeResponseError(error) {
@@ -759,10 +912,25 @@ export async function fetchLeverJobs(sourceInput, options = {}) {
   return jobs;
 }
 
+export async function fetchCommunityJobs(sourceInput, options = {}) {
+  const source = sourceInput?.raw ? sourceInput : normalizeSource(sourceInput);
+  const data = await fetchJson(sourceEndpoint(source), {
+    ...options,
+    timeoutMs: options.timeoutMs ?? source.timeoutMs,
+  });
+  if (!data || !Array.isArray(data.jobs)) throw new Error("社区聚合响应缺少 jobs 数组");
+  const feedUpdatedAt = normalizeTimestamp(data.updated);
+  return data.jobs.map((job) => ({
+    ...(job && typeof job === "object" ? job : {}),
+    _feedUpdatedAt: feedUpdatedAt,
+  }));
+}
+
 export async function fetchSourceJobs(sourceInput, options = {}) {
   const source = sourceInput?.raw ? sourceInput : normalizeSource(sourceInput);
   if (source.type === "greenhouse") return fetchGreenhouseJobs(source, options);
   if (source.type === "lever") return fetchLeverJobs(source, options);
+  if (source.type === "community-json") return fetchCommunityJobs(source, options);
   throw new Error(`不支持的来源类型：${source.type || "空"}`);
 }
 
@@ -791,10 +959,16 @@ function recordCandidateKeys(record) {
   return keys;
 }
 
+function recordStateKeys(record) {
+  const keys = recordCandidateKeys(record);
+  if (text(record?.__stateKey)) keys.push(`state:${text(record.__stateKey)}`);
+  return keys;
+}
+
 function carryPreviousState(record, previousRecords, now) {
-  const currentKeys = new Set(recordCandidateKeys(record));
+  const currentKeys = new Set(recordStateKeys(record));
   const previous = previousRecords.find((candidate) => {
-    return recordCandidateKeys(candidate).some((key) => currentKeys.has(key));
+    return recordStateKeys(candidate).some((key) => currentKeys.has(key));
   });
   if (!previous) return record;
   const state = normalizeRecordState(previous, now);
@@ -892,7 +1066,8 @@ function previousRecordForSource(record, source, now) {
   }
   if (Array.isArray(record.jobCategories)) retained.jobCategories = [...record.jobCategories];
   const fallbackIsSourceUrl = canonicalUrl(record.campusUrl) === canonicalUrl(source.campusUrl);
-  return setDedupeUrl(retained, fallbackIsSourceUrl ? "" : record.campusUrl);
+  setStateKey(retained, communityStateKey(source, retained, fallbackIsSourceUrl ? "" : record.campusUrl));
+  return setDedupeUrl(retained, source.type === "community-json" || fallbackIsSourceUrl ? "" : record.campusUrl);
 }
 
 function previousRecordsBySource(previousPayload, source, now) {
@@ -955,8 +1130,9 @@ export async function syncJobs(optionsOrSources = {}, maybeOptions = {}) {
         timeoutMs: options.timeoutMs ?? source.timeoutMs ?? defaultTimeoutMs,
       });
       for (const job of jobs) {
-        const record = normalizeJob(job, source, now);
-        if (record) candidates.push({ record: carryPreviousState(record, previousRecords, now), priority: 2 });
+        for (const record of normalizeJobs(job, source, now)) {
+          candidates.push({ record: carryPreviousState(record, previousRecords, now), priority: 2 });
+        }
       }
       sourceStates.push({ source, status: "ok", lastCheckedAt: now });
     } catch (error) {

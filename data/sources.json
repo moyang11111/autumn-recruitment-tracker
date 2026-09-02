@@ -18,5 +18,14 @@
     "companyType": "外企",
     "campusUrl": "https://www.palantir.com/careers/",
     "enabled": true
+  },
+  {
+    "id": "community-xiaozhao-radar",
+    "name": "校招雷达社区聚合（投递前核验）",
+    "type": "community-json",
+    "endpoint": "https://raw.githubusercontent.com/jiabaobei/xiaozhao-radar/main/jobs.json",
+    "companyType": "其他",
+    "campusUrl": "https://github.com/jiabaobei/xiaozhao-radar",
+    "enabled": true
   }
 ]

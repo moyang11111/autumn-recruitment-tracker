@@ -9,6 +9,7 @@ import {
   deduplicateRecords,
   normalizeCity,
   normalizeJob,
+  normalizeJobs,
   payloadContentChanged,
   renderJavaScript,
   renderJson,
@@ -38,6 +39,15 @@ const leverSource = {
   companyName: "示例软件",
   companyType: "私企",
   campusUrl: "https://software.example.com/careers",
+};
+
+const communitySource = {
+  id: "community-fixture",
+  name: "Fixture 社区聚合",
+  type: "community-json",
+  endpoint: "https://raw.githubusercontent.com/example/community/main/jobs.json",
+  companyType: "其他",
+  campusUrl: "https://github.com/example/community",
 };
 
 function response(body, status = 200) {
@@ -144,6 +154,170 @@ test("正常同步 Greenhouse 与 Lever，规范化字段并忽略危险岗位�
   assert.equal(payload.records.some((record) => record.id.includes("102")), false);
   assert.equal(mock.calls.every(({ options }) => options.method === "GET"), true);
   assert.equal(mock.calls.every(({ url }) => url.startsWith("https://")), true);
+});
+
+test("社区聚合源会拆分多城市岗位并保留来源更新时间", async () => {
+  const jobs = {
+    updated: "2026-08-11",
+    count: 2,
+    jobs: [
+      {
+        c: "城市科技",
+        p: "后端开发、产品经理",
+        l: "北京/深圳",
+        w: "批次:27届秋招正式批",
+        d: "2026-10-10",
+        t: "互联网",
+        ind: "互联网科技",
+        u: "https://jobs.example.com/campus/1",
+      },
+      {
+        c: "城市能源集团",
+        p: "电气工程师",
+        l: "深圳",
+        d: "招满即止",
+        t: "央企",
+        ind: "能源电力",
+        u: "",
+      },
+    ],
+  };
+  const mock = mockFetch({ [communitySource.endpoint]: jobs });
+  const payload = await syncJobs({
+    sources: [communitySource],
+    fetchImpl: mock.fetchImpl,
+    now: NOW,
+  });
+
+  assert.equal(payload.records.length, 3);
+  assert.deepEqual(
+    payload.records.filter((record) => record.companyName === "城市科技").map((record) => record.city).sort(),
+    ["北京", "深圳"],
+  );
+  const shenzhen = payload.records.find((record) => record.companyName === "城市科技" && record.city === "深圳");
+  assert.equal(shenzhen.province, "广东");
+  assert.equal(shenzhen.sourceType, "community-json");
+  assert.equal(shenzhen.sourceUpdatedAt, "2026-08-11T00:00:00.000Z");
+  assert.equal(shenzhen.deadline, "2026-10-10");
+  assert.deepEqual(shenzhen.jobCategories, ["后端开发、产品经理", "互联网科技", "批次:27届秋招正式批"]);
+  assert.equal(shenzhen.status, "未投递");
+
+  const fallback = payload.records.find((record) => record.companyName === "城市能源集团");
+  assert.equal(fallback.companyType, "央国企");
+  assert.equal(fallback.campusUrl, communitySource.campusUrl);
+  assert.equal(fallback.deadline, "");
+  assert.equal(payload.sources[0].recordCount, 3);
+});
+
+test("社区聚合多城市规范化不会因相同投递链接互相去重", () => {
+  const records = normalizeJobs({
+    c: "同链接企业",
+    p: "研发岗位",
+    l: "上海、深圳、杭州",
+    u: "https://jobs.example.com/campus/same",
+  }, communitySource, NOW);
+  assert.deepEqual(records.map((record) => [record.province, record.city]), [
+    ["上海", "上海"],
+    ["广东", "深圳"],
+    ["浙江", "杭州"],
+  ]);
+  assert.equal(new Set(records.map((record) => record.id)).size, 3);
+});
+
+test("社区源失败时保留全部多城市记录和每条投递状态", async () => {
+  const oldRecords = normalizeJobs({
+    c: "同链接企业",
+    p: "研发岗位",
+    l: "上海、深圳",
+    u: "https://jobs.example.com/campus/same",
+  }, communitySource, EARLIER).map((record, index) => ({
+    ...record,
+    status: index === 0 ? "已投递" : "面试中",
+    statusUpdatedAt: `${EARLIER.slice(0, 10)}T${index + 11}:00:00.000Z`,
+  }));
+  const payload = await syncJobs({
+    sources: [communitySource],
+    previousPayload: {
+      schemaVersion: 1,
+      generatedAt: EARLIER,
+      sources: [{ id: communitySource.id, status: "ok", recordCount: oldRecords.length }],
+      records: oldRecords,
+    },
+    fetchImpl: async () => {
+      throw new Error("community offline");
+    },
+    now: NOW,
+  });
+
+  assert.equal(payload.sources[0].status, "error");
+  assert.equal(payload.sources[0].recordCount, 2);
+  assert.equal(payload.records.length, 2);
+  assert.deepEqual(
+    payload.records.map((record) => [record.city, record.status]).sort(),
+    [["上海", "已投递"], ["深圳", "面试中"]],
+  );
+});
+
+test("社区无上游 ID 时标题和类别变化仍按公司、城市、链接保留状态", async () => {
+  const url = "https://jobs.example.com/campus/stable-state";
+  const oldRecord = normalizeJobs({
+    c: "状态稳定企业",
+    p: "旧岗位标题",
+    l: "深圳",
+    w: "旧批次",
+    ind: "旧类别",
+    u: url,
+  }, communitySource, EARLIER)[0];
+  const payload = await syncJobs({
+    sources: [communitySource],
+    previousPayload: {
+      schemaVersion: 1,
+      generatedAt: EARLIER,
+      sources: [{ id: communitySource.id, status: "ok", recordCount: 1 }],
+      records: [{ ...oldRecord, status: "面试中", statusUpdatedAt: "2026-08-31T13:00:00.000Z" }],
+    },
+    fetchImpl: mockFetch({
+      [communitySource.endpoint]: {
+        updated: "2026-09-01",
+        jobs: [{
+          c: "状态稳定企业",
+          p: "新岗位标题",
+          l: "深圳",
+          w: "新批次",
+          ind: "新类别",
+          u: url,
+        }],
+      },
+    }).fetchImpl,
+    now: NOW,
+  });
+
+  assert.equal(payload.records.length, 1);
+  assert.notEqual(payload.records[0].id, oldRecord.id, "回归测试应覆盖标题变化导致的旧 ID 变化");
+  assert.equal(payload.records[0].status, "面试中");
+  assert.equal(payload.records[0].statusUpdatedAt, "2026-08-31T13:00:00.000Z");
+});
+
+test("社区聚合会拒绝 null、空对象和缺少公司或岗位的信息", async () => {
+  const payload = await syncJobs({
+    sources: [communitySource],
+    fetchImpl: mockFetch({
+      [communitySource.endpoint]: {
+        jobs: [
+          null,
+          {},
+          { c: "", p: "缺公司", l: "上海", u: "https://jobs.example.com/missing-company" },
+          { c: "缺岗位", p: "", l: "上海", u: "https://jobs.example.com/missing-title" },
+          { c: "有效企业", p: "有效岗位", l: "上海", u: "https://jobs.example.com/valid" },
+        ],
+      },
+    }).fetchImpl,
+    now: NOW,
+  });
+
+  assert.equal(payload.records.length, 1);
+  assert.equal(payload.records[0].companyName, "有效企业");
+  assert.equal(payload.records[0].jobCategories.includes("有效岗位"), true);
 });
 
 test("来源失败时隔离错误并保留上一快照及投递状态", async () => {

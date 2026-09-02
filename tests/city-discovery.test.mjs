@@ -11,6 +11,18 @@ vm.runInContext(fs.readFileSync(path.join(ROOT, "data.js"), "utf8"), context);
 vm.runInContext(fs.readFileSync(path.join(ROOT, "app.js"), "utf8"), context);
 const app = context.AutumnRecruitmentApp;
 assert.equal(app.maxRenderedRecords, 80);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(app.sourceBadgeInfo({ sourceType: "community-json", sourceName: "社区源" }))),
+  { label: "社区聚合", className: "record-source-community" },
+);
+const communityLink = app.renderCampusLink({
+  ...app.initialRecords[0],
+  sourceType: "community-json",
+  companyName: "社区企业",
+  campusUrl: "https://github.com/example/community",
+});
+assert.match(communityLink, /查看\/核验链接/);
+assert.doesNotMatch(communityLink, /官网/);
 
 const records = [
   {

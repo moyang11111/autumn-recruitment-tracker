@@ -24,6 +24,7 @@
     : "autumn-recruitment-tracker:v1";
   const DEFAULT_STATUS = statusOptions[0] || "未投递";
   const DEFAULT_STATUS_UPDATED_AT = "1970-01-01T00:00:00.000Z";
+  const STORAGE_SCHEMA_VERSION = 2;
   const EXAMPLE_SOURCE_NAME = "内置示例";
   const DEFAULT_SYNC_SOURCE_NAME = "自动同步源";
   const MAX_RENDERED_RECORDS = 80;
@@ -66,6 +67,7 @@
     },
     sort: "default",
     storageAvailable: false,
+    currentRecordIds: new Set(),
     cityDraft: {
       province: "",
       city: "",
@@ -152,6 +154,27 @@
     }
   }
 
+  function communityProgressKey(record) {
+    if (record?.sourceType !== "community-json") return "";
+    const campusUrl = safeCampusUrl(record.campusUrl);
+    if (!campusUrl) return "";
+    return [
+      record.sourceId || "",
+      record.companyName || "",
+      record.province || "",
+      record.city || "",
+      campusUrl,
+    ].join("\u0000");
+  }
+
+  function recordProgressKeys(record) {
+    const keys = [];
+    if (typeof record?.id === "string" && record.id.trim()) keys.push(`id:${record.id}`);
+    const stableKey = communityProgressKey(record);
+    if (stableKey) keys.push(`community:${stableKey}`);
+    return keys;
+  }
+
   function isValidStoredRecord(record) {
     if (!record || typeof record !== "object" || Array.isArray(record)) return false;
     if (typeof record.id !== "string" || !record.id.trim()) return false;
@@ -168,6 +191,95 @@
     return true;
   }
 
+  function isValidStoredProgress(entry) {
+    return Boolean(
+      entry
+      && typeof entry === "object"
+      && !Array.isArray(entry)
+      && typeof entry.id === "string"
+      && entry.id.trim()
+      && statusOptions.includes(entry.status)
+      && isValidTimestamp(entry.statusUpdatedAt)
+      && (typeof entry.recordKey === "undefined" || (typeof entry.recordKey === "string" && entry.recordKey.trim())),
+    );
+  }
+
+  function progressEntryForRecord(record) {
+    if (!record || typeof record.id !== "string" || !record.id.trim()) return null;
+    if (!statusOptions.includes(record.status) || !isValidTimestamp(record.statusUpdatedAt)) return null;
+    if (record.status === DEFAULT_STATUS && record.statusUpdatedAt === DEFAULT_STATUS_UPDATED_AT) return null;
+    const progress = {
+      id: record.id,
+      status: record.status,
+      statusUpdatedAt: record.statusUpdatedAt,
+    };
+    const stableKey = communityProgressKey(record);
+    if (stableKey) progress.recordKey = stableKey;
+    return progress;
+  }
+
+  function compactHistoryRecord(record) {
+    const categories = Array.isArray(record?.categories)
+      ? record.categories
+      : (Array.isArray(record?.jobCategories) ? record.jobCategories : []);
+    return {
+      id: record.id,
+      companyName: record.companyName,
+      companyType: record.companyType,
+      openDate: record.openDate || "",
+      deadline: record.deadline || "",
+      province: record.province,
+      city: record.city,
+      categories: [...categories],
+      campusUrl: record.campusUrl,
+      sourceId: record.sourceId || "",
+      sourceName: record.sourceName || "",
+      sourceType: record.sourceType || "",
+      sourceKind: record.sourceKind || "sync",
+      sourceUpdatedAt: record.sourceUpdatedAt || "",
+      fetchedAt: record.fetchedAt || "",
+      lastSyncAt: record.lastSyncAt || "",
+      status: record.status,
+      statusUpdatedAt: record.statusUpdatedAt,
+      isDemo: record.isDemo === true,
+    };
+  }
+
+  function parseStoredState(parsed) {
+    if (Array.isArray(parsed)) {
+      const validRecords = parsed.filter(isValidStoredRecord);
+      if (parsed.length > 0 && validRecords.length === 0) return null;
+      return {
+        progress: validRecords.map(progressEntryForRecord).filter(Boolean),
+        history: cloneRecords(validRecords),
+        legacy: true,
+      };
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    if (Number(parsed.schemaVersion) !== STORAGE_SCHEMA_VERSION) return null;
+    if (Object.prototype.hasOwnProperty.call(parsed, "progress") && !Array.isArray(parsed.progress)) return null;
+    if (Object.prototype.hasOwnProperty.call(parsed, "history") && !Array.isArray(parsed.history)) return null;
+    return {
+      progress: (Array.isArray(parsed.progress) ? parsed.progress : [])
+        .filter(isValidStoredProgress)
+        .map((entry) => {
+          const normalized = {
+            id: entry.id.trim(),
+            status: entry.status,
+            statusUpdatedAt: entry.statusUpdatedAt,
+          };
+          if (typeof entry.recordKey === "string" && entry.recordKey.trim()) {
+            normalized.recordKey = entry.recordKey.trim();
+          }
+          return normalized;
+        }),
+      history: (Array.isArray(parsed.history) ? parsed.history : [])
+        .filter(isValidStoredRecord)
+        .map(cloneRecord),
+      legacy: false,
+    };
+  }
+
   function readStoredRecords() {
     const storage = getStorage();
     state.storageAvailable = Boolean(storage);
@@ -176,17 +288,30 @@
     try {
       const raw = storage.getItem(storageKey);
       if (raw === null) return null;
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return null;
-      const validRecords = parsed.filter(isValidStoredRecord);
-      if (parsed.length > 0 && validRecords.length === 0) return null;
-      return cloneRecords(validRecords);
+      return parseStoredState(JSON.parse(raw));
     } catch {
       return null;
     }
   }
 
-  function writeRecords(records) {
+  function serializeStoredState(records, currentIds = state.currentRecordIds) {
+    const safeRecords = Array.isArray(records) ? records.filter(isValidStoredRecord) : [];
+    const normalizedCurrentIds = currentIds instanceof Set
+      ? currentIds
+      : new Set(Array.isArray(currentIds) ? currentIds.filter((id) => typeof id === "string") : []);
+    const effectiveCurrentIds = normalizedCurrentIds.size > 0 || safeRecords.length === 0
+      ? normalizedCurrentIds
+      : new Set(safeRecords.map((record) => record.id));
+    return {
+      schemaVersion: STORAGE_SCHEMA_VERSION,
+      progress: safeRecords.map(progressEntryForRecord).filter(Boolean),
+      history: safeRecords
+        .filter((record) => !effectiveCurrentIds.has(record.id) && record.status !== DEFAULT_STATUS)
+        .map(compactHistoryRecord),
+    };
+  }
+
+  function writeRecords(records, options = {}) {
     const storage = getStorage();
     state.storageAvailable = Boolean(storage);
     if (!storage) {
@@ -195,7 +320,8 @@
     }
 
     try {
-      storage.setItem(storageKey, JSON.stringify(records));
+      const currentIds = options.currentIds ?? state.currentRecordIds;
+      storage.setItem(storageKey, JSON.stringify(serializeStoredState(records, currentIds)));
       const now = new Date();
       updateSaveHint(`已保存 ${formatClock(now)}`);
       return true;
@@ -450,12 +576,38 @@
   }
 
   function applyStoredProgress(records, storedRecords) {
-    if (!Array.isArray(storedRecords)) return records;
-    const validStoredRecords = storedRecords.filter(isValidStoredRecord);
-    const progressById = new Map(validStoredRecords.map((record) => [record.id, record]));
+    const parsedState = Array.isArray(storedRecords)
+      ? parseStoredState(storedRecords)
+      : storedRecords;
+    if (!parsedState || typeof parsedState !== "object") return records;
+
+    const progressById = new Map();
+    const addProgressEntry = (entry) => {
+      if (!isValidStoredProgress(entry)) return;
+      progressById.set(`id:${entry.id}`, entry);
+      if (typeof entry.recordKey === "string" && entry.recordKey.trim()) {
+        const stableKey = `community:${entry.recordKey.trim()}`;
+        if (!progressById.has(stableKey)) progressById.set(stableKey, entry);
+      }
+    };
+    (Array.isArray(parsedState.progress) ? parsedState.progress : [])
+      .forEach(addProgressEntry);
+    const historicalRecords = (Array.isArray(parsedState.history) ? parsedState.history : [])
+      .filter(isValidStoredRecord)
+      .map(cloneRecord);
+    historicalRecords.forEach((record) => {
+      const progress = progressEntryForRecord(record);
+      if (progress) {
+        if (!progressById.has(`id:${progress.id}`)) addProgressEntry(progress);
+        const stableKey = recordProgressKeys(record).find((key) => key.startsWith("community:"));
+        if (stableKey && !progressById.has(stableKey)) progressById.set(stableKey, progress);
+      }
+    });
     const currentIds = new Set(records.map((record) => record.id));
     const mergedRecords = records.map((record) => {
-      const stored = progressById.get(record.id);
+      const stored = recordProgressKeys(record)
+        .map((key) => progressById.get(key))
+        .find(Boolean);
       if (!stored || !statusOptions.includes(stored.status) || !isValidTimestamp(stored.statusUpdatedAt)) {
         return record;
       }
@@ -466,10 +618,20 @@
         statusUpdatedAt: stored.statusUpdatedAt,
       };
     });
-    const historicalRecords = [...progressById.values()]
-      .filter((record) => !currentIds.has(record.id) && record.status !== DEFAULT_STATUS)
-      .map(cloneRecord);
-    return [...mergedRecords, ...historicalRecords];
+    const retainedHistory = historicalRecords
+      .map((record) => {
+        const stored = recordProgressKeys(record)
+          .map((key) => progressById.get(key))
+          .find(Boolean);
+        if (!stored || stored.status === DEFAULT_STATUS || !isValidTimestamp(stored.statusUpdatedAt)) return record;
+        return {
+          ...record,
+          status: stored.status,
+          statusUpdatedAt: stored.statusUpdatedAt,
+        };
+      })
+      .filter((record) => !currentIds.has(record.id) && record.status !== DEFAULT_STATUS);
+    return [...mergedRecords, ...retainedHistory];
   }
 
   function loadRecords() {
@@ -477,6 +639,7 @@
     const resolved = resolveRecruitmentData();
     state.dataInfo = resolved.info;
     const fresh = cloneRecords(resolved.records);
+    state.currentRecordIds = new Set(fresh.map((record) => record.id));
     const merged = applyStoredProgress(fresh, stored);
     writeRecords(merged);
     return merged;
@@ -763,10 +926,19 @@
     ) || (isExampleRecord(record) ? EXAMPLE_SOURCE_NAME : DEFAULT_SYNC_SOURCE_NAME);
   }
 
+  function sourceBadgeInfo(record) {
+    if (isExampleRecord(record)) {
+      return { label: "示例数据", className: "record-source-example" };
+    }
+    if (record?.sourceType === "community-json") {
+      return { label: "社区聚合", className: "record-source-community" };
+    }
+    return { label: "自动同步", className: "record-source-sync" };
+  }
+
   function renderSourceBadge(record) {
-    const kind = isExampleRecord(record) ? "示例数据" : "自动同步";
-    const className = isExampleRecord(record) ? "record-source-example" : "record-source-sync";
-    return `<span class="record-source ${className}" title="来源：${escapeHtml(sourceNameForRecord(record))}">${kind}</span>`;
+    const badge = sourceBadgeInfo(record);
+    return `<span class="record-source ${badge.className}" title="来源：${escapeHtml(sourceNameForRecord(record))}">${badge.label}</span>`;
   }
 
   function statusIndex(status) {
@@ -927,8 +1099,12 @@
     if (!campusUrl) {
       return `<span class="campus-link campus-link-disabled" role="status">链接待核实</span>`;
     }
-    const label = compact ? "打开官网" : "官网";
-    return `<a class="campus-link" href="${escapeHtml(campusUrl)}" target="_blank" rel="noopener noreferrer" aria-label="打开 ${escapeHtml(record.companyName)} 校招官网">${label}<svg aria-hidden="true" viewBox="0 0 16 16" fill="none"><path d="M5.2 3.4h7.4v7.4M12.3 3.7 4.1 11.9" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.1 8.5v2.8c0 .5-.4.9-.9.9H3.8c-.5 0-.9-.4-.9-.9V6.8c0-.5.4-.9.9-.9h2.8" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></svg></a>`;
+    const isCommunity = record?.sourceType === "community-json";
+    const label = isCommunity ? "查看/核验链接" : (compact ? "打开官网" : "官网");
+    const ariaLabel = isCommunity
+      ? `查看 ${record.companyName} 招聘核验链接`
+      : `打开 ${record.companyName} 校招官网`;
+    return `<a class="campus-link" href="${escapeHtml(campusUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(ariaLabel)}">${label}<svg aria-hidden="true" viewBox="0 0 16 16" fill="none"><path d="M5.2 3.4h7.4v7.4M12.3 3.7 4.1 11.9" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.1 8.5v2.8c0 .5-.4.9-.9.9H3.8c-.5 0-.9-.4-.9-.9V6.8c0-.5.4-.9.9-.9h2.8" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></svg></a>`;
   }
 
   function renderDeadline(record, extraClass = "") {
@@ -988,7 +1164,7 @@
         <div class="job-card-field"><span class="job-card-label">岗位方向</span><div class="job-card-value">${renderCategories(record)}</div></div>
         <div class="job-card-field"><span class="job-card-label">工作地点</span><div class="job-card-value">${renderLocation(record)}</div></div>
         <div class="job-card-field"><span class="job-card-label">开放 / 截止</span><div class="job-card-value">${renderDeadline(record, "job-card-deadline")}</div></div>
-        <div class="job-card-field"><span class="job-card-label">校招官网</span><div class="job-card-value">${renderCampusLink(record, true)}</div></div>
+        <div class="job-card-field"><span class="job-card-label">${record.sourceType === "community-json" ? "招聘核验链接" : "校招官网"}</span><div class="job-card-value">${renderCampusLink(record, true)}</div></div>
       </div>
       <div class="job-card-footer">
         ${renderStatusPicker(record, "移动端")}
@@ -1072,6 +1248,7 @@
     try {
       const { resolved } = await fetchLatestRecruitmentPayload(fetchImpl);
       const currentProgress = cloneRecords(state.records);
+      state.currentRecordIds = new Set(resolved.records.map((record) => record.id));
       state.records = applyStoredProgress(cloneRecords(resolved.records), currentProgress);
       state.dataInfo = resolved.info;
       writeRecords(state.records);
@@ -1447,6 +1624,7 @@
       lastSyncAt: "",
     };
     state.records = normalizeExampleRecords();
+    state.currentRecordIds = new Set(state.records.map((record) => record.id));
     state.sort = "default";
     clearStatusAssistantResult();
     clearFilters();
@@ -1599,6 +1777,7 @@
     isHttpsUrl,
     safeCampusUrl,
     isValidStoredRecord,
+    serializeStoredState,
     isOptionalDate,
     escapeHtml,
     inferStatusFromNotice,
@@ -1606,7 +1785,9 @@
     resolveRecruitmentData,
     applyStoredProgress,
     writeRecords,
+    renderCampusLink,
     statusClassName,
+    sourceBadgeInfo,
     updateStatus,
     resetToInitialData,
     init,

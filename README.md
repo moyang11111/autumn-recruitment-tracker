@@ -16,7 +16,7 @@ python -m http.server 5173
 
 ## 自动更新招聘信息
 
-- `data/sources.json` 保存公开招聘来源。目前接入 Greenhouse Job Board 和 Lever Postings 两类无需密钥的公开 GET 接口。
+- `data/sources.json` 保存公开招聘来源。目前接入 Greenhouse Job Board、Lever Postings，以及有明确开源许可的国内校招社区聚合 JSON，均无需密钥。
 - `scripts/sync-jobs.mjs` 负责拉取、规范化城市、去重、校验 HTTPS 链接，并同时生成 `data/jobs.generated.json` 和可通过 `file://` 加载的 `data/jobs.generated.js`。
 - 某个来源失败时只隔离该来源，并保留上一份有效快照；其他来源仍可继续更新。
 - `.github/workflows/sync-jobs.yml` 支持手动执行，并每 6 小时自动运行一次。测试通过且岗位内容确有变化时，才提交新的快照。
@@ -27,7 +27,7 @@ python -m http.server 5173
 npm run sync
 ```
 
-当前预置 Airbnb Greenhouse 和 Palantir Lever 两个公开来源。它们包含企业公开职位，不保证全部属于中国大陆校招或秋招岗位；应通过来源标签和企业官网再次核验。增加来源、失败回退规则和字段契约详见 `data/README.md`。
+当前预置 Airbnb Greenhouse、Palantir Lever 两个企业公开源，以及 xiaozhao-radar 国内校招社区聚合源。社区源覆盖约千条校招信息，并会把一条多城市岗位拆成可独立筛选的城市记录；页面会显示“社区聚合”标签。所有记录都应通过企业官网再次核验，第三方许可与归属见 `THIRD_PARTY_NOTICES.md`，字段契约详见 `data/README.md`。
 
 若 GitHub 仓库启用了严格分支保护，需要允许该工作流写入内容，或把工作流改成自动创建数据更新 PR，否则定时任务可以抓取但无法提交快照。
 
@@ -44,10 +44,10 @@ npm run sync
 
 - `data.js` 提供 `globalThis.INITIAL_RECRUITMENT_DATA`，包含 24 条可直接用于演示的初始化记录。
 - `data.js` 中的日期和招聘链接是演示数据；日期是模拟的 2026 年 8—10 月秋招时间，请务必以企业官方招聘页面为准。所有初始化记录和新同步职位均默认“未投递”，自动同步记录会显示独立的来源标签。
-- 首次打开时，前端将当前有效数据写入 localStorage；用户后续修改状态时写回 `autumn-recruitment-tracker:v1`。同步刷新只覆盖招聘字段，不覆盖同 ID 的本地投递状态。
+- 首次打开时，前端只把用户进度和必要的历史记录写入 localStorage，不会把完整招聘快照复制进去；用户后续修改状态时写回 `autumn-recruitment-tracker:v2`。同步刷新只覆盖招聘字段，不覆盖同 ID 的本地投递状态。
 - “恢复示例数据”一类操作只应清除该 key 并重新复制初始化数组，不会影响浏览器其他站点的数据。
 - 每次状态改变都要同步写入该记录的 `statusUpdatedAt`（ISO 8601 时间字符串）；从未修改过的默认状态使用纪元值并显示“尚未更新”。列表支持截止时间、投递状态和最近更新时间的正序/倒序排序。
-- 新版使用 `autumn-recruitment-tracker:v2`，首次打开时所有岗位均从“未投递”开始；旧版 `v1` 数据不会被删除，但不再覆盖新版默认状态。此后你在新版手动修改的真实进度会持续保留。
+- 新版使用 `autumn-recruitment-tracker:v2` 的紧凑进度格式，首次打开时所有岗位均从“未投递”开始；旧版 `v1` 数据不会被删除，但不再覆盖新版默认状态。此前 v2 的完整记录数组会在首次读取时迁移为紧凑的 `progress`/`history` 对象。
 - 存储和展示的校招链接仅接受 `https:` 协议；日期字段必须为有效的 `YYYY-MM-DD`，且开放日期不得晚于截止日期。
 
 ## 导出 CSV 并在 Excel 中打开

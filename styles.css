@@ -1839,6 +1839,11 @@ h1 span {
   color: var(--forest);
 }
 
+.record-source-community {
+  background: #fff2d8;
+  color: #8a5b13;
+}
+
 .date-pending {
   color: var(--ink-soft);
   font-family: "Noto Sans SC", sans-serif;
