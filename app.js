@@ -19,6 +19,17 @@
     && typeof root.RECRUITMENT_DOMESTIC_LOCATIONS === "object"
     ? root.RECRUITMENT_DOMESTIC_LOCATIONS
     : {};
+  const focusRegion = root.RECRUITMENT_FOCUS_REGION
+    && typeof root.RECRUITMENT_FOCUS_REGION === "object"
+    ? root.RECRUITMENT_FOCUS_REGION
+    : {};
+  const focusProvince = typeof focusRegion.province === "string" && focusRegion.province.trim()
+    ? focusRegion.province.trim()
+    : "广东";
+  const focusCities = Array.isArray(focusRegion.cities) && focusRegion.cities.length > 0
+    ? focusRegion.cities.filter((city) => typeof city === "string" && city.trim()).map((city) => city.trim())
+    : (Array.isArray(domesticLocationSource[focusProvince]) ? domesticLocationSource[focusProvince] : []);
+  const focusCitySet = new Set(focusCities);
   const storageKey = typeof dataMeta.storageKey === "string" && dataMeta.storageKey.trim()
     ? dataMeta.storageKey
     : "autumn-recruitment-tracker:v1";
@@ -53,14 +64,14 @@
     records: [],
     dataInfo: {
       mode: "example",
-      label: "示例数据",
+      label: "广东示例数据",
       sourceName: EXAMPLE_SOURCE_NAME,
       lastSyncAt: "",
     },
     filters: {
       keyword: "",
       nature: "",
-      province: "",
+      province: focusProvince,
       city: "",
       deadline: "",
       status: "",
@@ -69,7 +80,7 @@
     storageAvailable: false,
     currentRecordIds: new Set(),
     cityDraft: {
-      province: "",
+      province: focusProvince,
       city: "",
     },
     cityRequest: {
@@ -360,8 +371,19 @@
     const nestedMeta = payload && typeof payload === "object" && payload.meta && typeof payload.meta === "object"
       ? payload.meta
       : {};
-    const sourceList = Array.isArray(payload?.sources)
+    const sourceEntries = Array.isArray(payload?.sources)
       ? payload.sources
+        .filter((source) => source && typeof source === "object")
+        .map((source) => ({
+          id: pickFirstString(source.id),
+          name: pickFirstString(source.name, source.sourceName, source.id),
+          status: pickFirstString(source.status) || "unknown",
+          recordCount: Number.isInteger(source.recordCount) && source.recordCount >= 0 ? source.recordCount : 0,
+          stale: source.stale === true,
+        }))
+      : [];
+    const sourceList = sourceEntries.length > 0
+      ? sourceEntries
         .map((source) => pickFirstString(source?.name, source?.sourceName, source?.id))
         .filter(Boolean)
         .join("、")
@@ -398,6 +420,8 @@
     return {
       sourceName,
       lastSyncAt: isValidTimestamp(lastSyncAt) ? lastSyncAt : "",
+      sourceCount: sourceEntries.length,
+      sourceEntries,
     };
   }
 
@@ -428,6 +452,17 @@
       // A generated script may expose the payload only through globalThis.
     }
     return root.RECRUITMENT_SYNC_PAYLOAD;
+  }
+
+  function isFocusRecord(record) {
+    if (!record || typeof record !== "object") return false;
+    if (record.province !== focusProvince) return false;
+    const city = typeof record.city === "string" ? record.city.trim() : "";
+    return city === "" || focusCitySet.has(city);
+  }
+
+  function focusRecords(records) {
+    return (Array.isArray(records) ? records : []).filter(isFocusRecord);
   }
 
   function normalizeFeedRecord(record, sourceKind, sourceName, lastSyncAt) {
@@ -481,6 +516,7 @@
     return initialRecords
       .map((record) => normalizeFeedRecord(record, "example", EXAMPLE_SOURCE_NAME, ""))
       .filter(Boolean)
+      .filter(isFocusRecord)
       .map((record) => ({
         ...record,
         status: statusOptions.includes(record.status) ? record.status : DEFAULT_STATUS,
@@ -492,10 +528,10 @@
 
   function mergeRecruitmentRecords(exampleRecords, syncRecords) {
     const byId = new Map();
-    exampleRecords.forEach((record) => {
+    exampleRecords.filter(isFocusRecord).forEach((record) => {
       if (record?.id) byId.set(record.id, cloneRecord(record));
     });
-    syncRecords.forEach((record) => {
+    syncRecords.filter(isFocusRecord).forEach((record) => {
       if (!record?.id) return;
       const previous = byId.get(record.id);
       const mergedStatus = statusOptions.includes(record.status)
@@ -530,9 +566,11 @@
         syncRecords: [],
         info: {
           mode: "example",
-          label: "示例数据",
+          label: "广东示例数据",
           sourceName: EXAMPLE_SOURCE_NAME,
           lastSyncAt: "",
+          sourceCount: 0,
+          sourceEntries: [],
         },
       };
     }
@@ -543,16 +581,18 @@
       "sync",
       syncMeta.sourceName,
       syncMeta.lastSyncAt,
-    )).filter(Boolean);
+    )).filter((record) => record && isFocusRecord(record));
     if (syncRecords.length === 0) {
       return {
         records: exampleRecords,
         syncRecords: [],
         info: {
           mode: "example",
-          label: "示例数据",
+          label: "广东示例数据",
           sourceName: EXAMPLE_SOURCE_NAME,
           lastSyncAt: "",
+          sourceCount: 0,
+          sourceEntries: [],
         },
       };
     }
@@ -568,9 +608,11 @@
       syncRecords: dedupedSyncRecords,
       info: {
         mode: "sync",
-        label: "自动同步 + 示例数据",
+        label: "广东自动同步 + 示例数据",
         sourceName: syncMeta.sourceName,
         lastSyncAt: inferredLastSyncAt,
+        sourceCount: syncMeta.sourceCount,
+        sourceEntries: syncMeta.sourceEntries,
       },
     };
   }
@@ -594,6 +636,7 @@
       .forEach(addProgressEntry);
     const historicalRecords = (Array.isArray(parsedState.history) ? parsedState.history : [])
       .filter(isValidStoredRecord)
+      .filter(isFocusRecord)
       .map(cloneRecord);
     historicalRecords.forEach((record) => {
       const progress = progressEntryForRecord(record);
@@ -1004,7 +1047,9 @@
   }
 
   function filterRecords(records, filters = state.filters) {
-    return records.filter((record) => recordMatchesFilters(record, filters));
+    return (Array.isArray(records) ? records : [])
+      .filter(isFocusRecord)
+      .filter((record) => recordMatchesFilters(record, filters));
   }
 
   function calculateStats(records = state.records) {
@@ -1044,7 +1089,9 @@
     });
     (Array.isArray(records) ? records : []).forEach((record) => {
       if (!record || !locationMap.has(record.province) || typeof record.city !== "string" || !record.city.trim()) return;
-      locationMap.get(record.province).add(record.city.trim());
+      const city = record.city.trim();
+      if (!focusCitySet.has(city)) return;
+      locationMap.get(record.province).add(city);
     });
     return [...locationMap.entries()].map(([province, cities]) => ({
       province,
@@ -1063,7 +1110,7 @@
     state.cityDraft.province = selectedProvince;
     state.cityDraft.city = selectedCity;
     setSelectOptions(dom.provinceFilter, provinces, "请选择省份");
-    setSelectOptions(dom.cityFilter, cities, "请选择城市");
+    setSelectOptions(dom.cityFilter, cities, `${focusProvince}全省（含地点未细分）`);
     dom.provinceFilter.value = selectedProvince;
     dom.cityFilter.value = selectedCity;
     dom.cityFilter.disabled = !selectedProvince || cities.length === 0 || state.cityRequest.loading;
@@ -1126,8 +1173,10 @@
   }
 
   function renderLocation(record) {
-    const city = typeof record.city === "string" && record.city.trim() ? record.city : "城市待定";
-    const province = typeof record.province === "string" && record.province.trim() ? record.province : "地区待定";
+    const hasCity = typeof record.city === "string" && Boolean(record.city.trim());
+    const city = hasCity ? record.city : "地点未细分";
+    const provinceName = typeof record.province === "string" && record.province.trim() ? record.province : "地区待定";
+    const province = hasCity ? provinceName : `${provinceName} · 全省`;
     return `<div class="location-cell"><strong>${escapeHtml(city)}</strong><span>${escapeHtml(province)}</span></div>`;
   }
 
@@ -1192,7 +1241,7 @@
     if (dom.cityFetchButton) {
       dom.cityFetchButton.disabled = state.cityRequest.loading || !hasCity;
       dom.cityFetchButton.classList.toggle("is-loading", state.cityRequest.loading);
-      dom.cityFetchButton.textContent = state.cityRequest.loading ? "正在获取…" : "获取该城市秋招";
+      dom.cityFetchButton.textContent = state.cityRequest.loading ? "正在获取…" : "获取该城市信息";
     }
     if (!dom.cityFetchStatus) return;
     if (state.cityRequest.loading) {
@@ -1202,7 +1251,7 @@
     } else if (state.cityRequest.hasRequested) {
       dom.cityFetchStatus.textContent = `已列出 ${state.filters.city} 的 ${state.cityRequest.lastResultCount} 条岗位；投递前请进入官网核验。`;
     } else {
-      dom.cityFetchStatus.textContent = "请选择国内省份和城市，再点击获取信息。";
+      dom.cityFetchStatus.textContent = "请选择广东城市，再点击获取信息；不细分城市时可查看广东全省。";
     }
   }
 
@@ -1235,7 +1284,7 @@
     const validLocation = availableDomesticLocations().some((item) => (
       item.province === normalizedProvince && item.cities.includes(normalizedCity)
     ));
-    if (!validLocation) throw new Error("请先选择有效的国内省份和城市");
+    if (!validLocation) throw new Error("请先选择有效的广东城市");
 
     state.cityDraft.province = normalizedProvince;
     state.cityDraft.city = normalizedCity;
@@ -1287,9 +1336,26 @@
     };
   }
 
+  function calculateSnapshotSummary(records = state.records) {
+    const focusedRecords = focusRecords(records);
+    const sourceEntries = Array.isArray(state.dataInfo.sourceEntries) ? state.dataInfo.sourceEntries : [];
+    const sourceNames = new Set(focusedRecords.map((record) => sourceNameForRecord(record)).filter(Boolean));
+    const sourceCount = sourceEntries.length || sourceNames.size;
+    const healthySourceCount = sourceEntries.filter((source) => source.status === "ok" && !source.stale).length;
+    const staleSourceCount = sourceEntries.filter((source) => source.status !== "ok" || source.stale).length;
+    return {
+      jobCount: focusedRecords.length,
+      companyCount: new Set(focusedRecords.map((record) => record.companyName).filter(Boolean)).size,
+      sourceCount,
+      healthySourceCount: sourceEntries.length > 0 ? healthySourceCount : sourceNames.size,
+      staleSourceCount,
+    };
+  }
+
   function updateDataProvenance() {
     if (!hasDocument) return;
-    if (dom.dataSourceKind) dom.dataSourceKind.textContent = state.dataInfo.label || "示例数据";
+    const summary = calculateSnapshotSummary();
+    if (dom.dataSourceKind) dom.dataSourceKind.textContent = state.dataInfo.label || "广东示例数据";
     if (dom.dataSourceName) {
       const suffix = state.dataInfo.mode === "sync" ? "（含内置示例）" : "";
       dom.dataSourceName.textContent = `来源：${state.dataInfo.sourceName || EXAMPLE_SOURCE_NAME}${suffix}`;
@@ -1297,18 +1363,28 @@
     if (dom.dataLastSync) {
       dom.dataLastSync.textContent = state.dataInfo.lastSyncAt
         ? `最后同步：${formatSyncTime(state.dataInfo.lastSyncAt)}`
-        : "最后同步：暂无（示例数据）";
+        : "最后同步：暂无（广东示例数据）";
+    }
+    if (dom.dataSnapshotJobs) dom.dataSnapshotJobs.textContent = `岗位：${summary.jobCount}`;
+    if (dom.dataSnapshotCompanies) dom.dataSnapshotCompanies.textContent = `企业：${summary.companyCount}`;
+    if (dom.dataSnapshotSources) dom.dataSnapshotSources.textContent = `来源：${summary.sourceCount}`;
+    if (dom.dataSourceHealth) {
+      const healthText = state.dataInfo.mode === "sync"
+        ? `来源健康：${summary.healthySourceCount}/${summary.sourceCount} 正常`
+        : "来源健康：内置示例";
+      dom.dataSourceHealth.textContent = healthText;
+      dom.dataSourceHealth.classList.toggle("is-stale", summary.staleSourceCount > 0);
     }
   }
 
   function updateDiscoverySummary(records) {
     if (!hasDocument) return;
     const summary = calculateDiscoverySummary(records);
-    const location = [summary.province, summary.city].filter(Boolean).join(" · ") || "全部城市";
+    const location = [summary.province, summary.city].filter(Boolean).join(" · ") || `${focusProvince}全省`;
     if (dom.cityDiscoveryContext) {
       dom.cityDiscoveryContext.textContent = state.cityRequest.hasRequested
         ? `${location} · 可叠加其他筛选条件`
-        : "先选择国内城市，再点击获取信息";
+        : `先选择广东城市，再点击获取信息；默认查看${focusProvince}全省`;
     }
     if (dom.cityMatchCount) dom.cityMatchCount.textContent = String(summary.matchCount);
     if (dom.citySourceCount) dom.citySourceCount.textContent = String(summary.sourceCount);
@@ -1332,7 +1408,7 @@
     }
     if (dom.emptyStateDescription) {
       dom.emptyStateDescription.textContent = hasLocationFilter
-        ? "可以恢复全部城市，或保留其他筛选条件继续查找。"
+        ? `可以恢复${focusProvince}全省，或保留其他筛选条件继续查找。`
         : "试试减少筛选条件，或者换一个关键词继续看看。";
     }
     if (dom.emptyRestoreCitiesButton) dom.emptyRestoreCitiesButton.hidden = !hasLocationFilter;
@@ -1393,12 +1469,12 @@
     state.filters = {
       keyword: "",
       nature: "",
-      province: "",
+      province: focusProvince,
       city: "",
       deadline: "",
       status: "",
     };
-    state.cityDraft = { province: "", city: "" };
+    state.cityDraft = { province: focusProvince, city: "" };
     state.cityRequest = {
       loading: false,
       hasRequested: false,
@@ -1407,20 +1483,20 @@
     };
     syncControls();
     renderResults();
-    if (showMessage) showToast("已清除全部筛选条件");
+    if (showMessage) showToast(`已清除其他筛选，保留${focusProvince}范围`);
   }
 
   function restoreAllCities(showMessage = true) {
-    state.filters.province = "";
+    state.filters.province = focusProvince;
     state.filters.city = "";
-    state.cityDraft.province = "";
+    state.cityDraft.province = focusProvince;
     state.cityDraft.city = "";
     state.cityRequest.hasRequested = false;
     state.cityRequest.lastError = "";
     state.cityRequest.lastResultCount = 0;
     syncControls();
     renderResults();
-    if (showMessage) showToast("已恢复全部城市");
+    if (showMessage) showToast(`已恢复${focusProvince}全省`);
   }
 
   function statusViewForControl(control) {
@@ -1526,7 +1602,8 @@
       const firstCategory = Array.isArray(record.categories) && record.categories.length > 0
         ? ` · ${record.categories[0]}`
         : "";
-      option.textContent = `${record.companyName} · ${record.city}${firstCategory}`;
+      const locationLabel = record.city || `${focusProvince}全省 / 地点未细分`;
+      option.textContent = `${record.companyName} · ${locationLabel}${firstCategory}`;
       fragment.appendChild(option);
     });
     dom.statusAssistantJobSelect.replaceChildren(fragment);
@@ -1615,11 +1692,11 @@
 
   function resetToInitialData() {
     const confirmFn = typeof root.confirm === "function" ? root.confirm.bind(root) : () => true;
-    if (!confirmFn("确定恢复示例数据吗？这会覆盖本机保存的投递状态。")) return;
+    if (!confirmFn("确定恢复广东示例数据吗？这会覆盖本机保存的投递状态。")) return;
     removeStoredRecords();
     state.dataInfo = {
       mode: "example",
-      label: "示例数据",
+      label: "广东示例数据",
       sourceName: EXAMPLE_SOURCE_NAME,
       lastSyncAt: "",
     };
@@ -1630,7 +1707,7 @@
     clearFilters();
     const persisted = writeRecords(state.records);
     renderAll();
-    showToast(persisted ? "已恢复示例数据" : "示例数据已恢复，但未持久化，请不要刷新页面");
+    showToast(persisted ? "已恢复广东示例数据" : "广东示例数据已恢复，但未持久化，请不要刷新页面");
     return persisted;
   }
 
@@ -1679,6 +1756,10 @@
       dataSourceKind: byId("dataSourceKind"),
       dataSourceName: byId("dataSourceName"),
       dataLastSync: byId("dataLastSync"),
+      dataSnapshotJobs: byId("dataSnapshotJobs"),
+      dataSnapshotCompanies: byId("dataSnapshotCompanies"),
+      dataSnapshotSources: byId("dataSnapshotSources"),
+      dataSourceHealth: byId("dataSourceHealth"),
       filtersForm: byId("filtersForm"),
       keywordInput: byId("keywordInput"),
       natureFilter: byId("natureFilter"),
@@ -1726,7 +1807,11 @@
   function updateDataNote() {
     if (!dom.dataNote) return;
     if (state.dataInfo.mode === "sync") {
-      dom.dataNote.textContent = "已加载自动同步招聘信息；空日期显示为待公布，请以企业官方页面为准。";
+      const summary = calculateSnapshotSummary();
+      const staleNote = summary.staleSourceCount > 0
+        ? `有 ${summary.staleSourceCount} 个来源异常或数据过旧，已标记为 stale；来源失败时会保留上一份广东快照。`
+        : "当前来源均读取成功。";
+      dom.dataNote.textContent = `已加载广东自动同步招聘信息，共 ${summary.jobCount} 条岗位、${summary.companyCount} 家企业；${staleNote}空日期显示为待公布，投递前请以企业官方页面为准。`;
       return;
     }
     dom.dataNote.textContent = typeof dataMeta.dateNote === "string" && dataMeta.dateNote.trim()
@@ -1755,12 +1840,15 @@
       return state.dataInfo;
     },
     state,
-    initialRecords,
+    initialRecords: normalizeExampleRecords(),
     statusOptions,
     companyTypeOptions,
+    focusProvince,
+    focusCities: [...focusCities],
     storageKey,
     maxRenderedRecords: MAX_RENDERED_RECORDS,
     calculateStats,
+    calculateSnapshotSummary,
     calculateDiscoverySummary,
     availableDomesticLocations,
     fetchLatestRecruitmentPayload,
@@ -1770,6 +1858,7 @@
     formatSyncTime,
     recordMatchesFilters,
     filterRecords,
+    isFocusRecord,
     sortRecords,
     makeCsv,
     downloadCsv,

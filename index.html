@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f7f7f2" />
     <meta
       name="description"
-      content="秋招资源汇总平台：整理校招信息，追踪每一次简历投递。"
+      content="广东秋招资源汇总平台：整理公开校招信息，追踪每一次简历投递。"
     />
     <title>秋招追踪台 · 秋招资源汇总平台</title>
     <link rel="stylesheet" href="styles.css" />
@@ -45,7 +45,7 @@
             <p class="eyebrow">秋招资源汇总平台</p>
             <h1 id="page-title">把每一次投递，<br /><span>变成下一步。</span></h1>
             <p class="hero-description">
-              集中整理央国企与优质企业校招信息，记录进度、关注截止日期，把有限的精力留给真正重要的选择。
+              聚焦广东 21 个城市，整理公开可核验的央国企与优质企业校招信息，记录进度、关注截止日期，把有限的精力留给真正重要的选择。
             </p>
             <div class="hero-actions" aria-label="快捷操作">
               <button class="button button-primary" id="heroExportButton" type="button">
@@ -74,9 +74,13 @@
           开放时间与截止时间为模拟的 2026 秋招日期，请以企业官方页面为准。
         </p>
         <div class="data-provenance" id="dataProvenance" role="status" aria-live="polite">
-          <span class="provenance-kind" id="dataSourceKind">示例数据</span>
+          <span class="provenance-kind" id="dataSourceKind">广东示例数据</span>
           <span id="dataSourceName">来源：内置示例</span>
-          <span id="dataLastSync">最后同步：暂无</span>
+          <span id="dataSnapshotJobs">岗位：—</span>
+          <span id="dataSnapshotCompanies">企业：—</span>
+          <span id="dataSnapshotSources">来源：—</span>
+          <span id="dataSourceHealth" class="provenance-health">来源健康：—</span>
+          <span id="dataLastSync">最后同步：暂无（广东示例数据）</span>
         </div>
 
         <section class="stats-section" aria-labelledby="stats-title">
@@ -89,9 +93,9 @@
           </div>
           <div class="stats-grid" id="statsGrid" aria-live="polite">
             <article class="stat-card stat-card-primary">
-              <div class="stat-card-top"><span class="stat-label">总岗位数</span><span class="stat-icon" aria-hidden="true">#</span></div>
+              <div class="stat-card-top"><span class="stat-label">广东岗位数</span><span class="stat-icon" aria-hidden="true">粤</span></div>
               <strong class="stat-value" data-stat="total">—</strong>
-              <span class="stat-footnote">已收录的秋招机会</span>
+              <span class="stat-footnote">仅统计广东范围快照</span>
             </article>
             <article class="stat-card stat-card-soe">
               <div class="stat-card-top"><span class="stat-label">央国企</span><span class="stat-icon" aria-hidden="true">国</span></div>
@@ -148,7 +152,7 @@
                 </span>
                 <span>筛选与检索</span>
               </div>
-              <button class="text-button" id="clearFiltersButton" type="button">清除全部筛选</button>
+              <button class="text-button" id="clearFiltersButton" type="button">清除其他筛选</button>
             </div>
 
             <div class="filter-grid">
@@ -174,15 +178,15 @@
                 </select>
               </label>
               <label class="field">
-                <span class="field-label">国内省份</span>
+                <span class="field-label">省份（仅广东）</span>
                 <select id="provinceFilter" data-filter="province">
                   <option value="">请选择省份</option>
                 </select>
               </label>
               <label class="field">
-                <span class="field-label">目标城市</span>
+                <span class="field-label">广东城市</span>
                 <select id="cityFilter" data-filter="city" disabled>
-                  <option value="">请选择城市</option>
+                  <option value="">广东全省（含地点未细分）</option>
                 </select>
               </label>
               <label class="field">
@@ -205,9 +209,9 @@
 
           <section class="city-discovery" id="cityDiscovery" aria-labelledby="cityDiscoveryTitle">
             <div class="city-discovery-copy">
-              <p class="eyebrow">City discovery</p>
-              <h3 id="cityDiscoveryTitle">按城市获取秋招</h3>
-              <p id="cityDiscoveryContext">先选择国内城市，再点击获取信息</p>
+              <p class="eyebrow">Guangdong discovery</p>
+              <h3 id="cityDiscoveryTitle">按广东城市获取信息</h3>
+              <p id="cityDiscoveryContext">先选择广东城市，再点击获取信息</p>
             </div>
             <div class="city-discovery-metrics" aria-live="polite" aria-atomic="true">
               <div class="discovery-metric">
@@ -225,13 +229,13 @@
             </div>
             <div class="city-discovery-actions">
               <button class="button button-primary city-fetch-button" id="cityFetchButton" type="button" disabled>
-                获取该城市秋招
+                获取该城市信息
               </button>
               <button class="button button-quiet city-discovery-reset" id="restoreCitiesButton" type="button">
-                恢复全部城市
+                恢复广东全省
               </button>
               <p class="city-fetch-status" id="cityFetchStatus" role="status" aria-live="polite">
-                请选择国内省份和城市，再点击获取信息。
+                请选择广东城市，再点击获取信息；不细分城市时可查看广东全省。
               </p>
             </div>
           </section>
@@ -340,8 +344,8 @@
             <h3 id="emptyStateTitle">没有找到匹配的岗位</h3>
             <p id="emptyStateDescription">试试减少筛选条件，或者换一个关键词继续看看。</p>
             <div class="empty-actions">
-              <button class="button button-secondary" id="emptyRestoreCitiesButton" type="button">恢复全部城市</button>
-              <button class="button button-secondary" id="emptyClearButton" type="button">清除全部筛选</button>
+              <button class="button button-secondary" id="emptyRestoreCitiesButton" type="button">恢复广东全省</button>
+              <button class="button button-secondary" id="emptyClearButton" type="button">清除其他筛选</button>
             </div>
           </div>
         </section>
@@ -350,7 +354,7 @@
       <footer class="site-footer">
         <div class="footer-inner">
           <p><span class="footer-brand">秋招追踪台</span> · 为每一次认真准备留一份清晰记录。</p>
-          <p class="footer-note">本页面数据仅供信息整理参考，请以企业官方公告为准。</p>
+          <p class="footer-note">本页面仅整理广东公开信息，请以企业官方公告为准。</p>
         </div>
       </footer>
     </div>

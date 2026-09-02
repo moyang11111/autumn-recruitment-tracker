@@ -1571,6 +1571,11 @@ h1 span {
   color: var(--forest);
 }
 
+.provenance-health.is-stale {
+  color: #9a5b24;
+  font-weight: 700;
+}
+
 .city-discovery {
   display: grid;
   grid-template-columns: minmax(190px, 1fr) auto auto;

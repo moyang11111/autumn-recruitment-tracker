@@ -2,7 +2,7 @@
   "name": "autumn-recruitment-tracker",
   "version": "0.1.0",
   "private": true,
-  "description": "无依赖的静态秋招资源汇总与投递进度管理平台",
+  "description": "无依赖的静态广东秋招资源汇总与投递进度管理平台",
   "type": "commonjs",
   "scripts": {
     "test": "node tests/verify.mjs && node --test tests/sync-jobs.test.mjs && node tests/status-assistant.test.mjs && node tests/city-discovery.test.mjs",

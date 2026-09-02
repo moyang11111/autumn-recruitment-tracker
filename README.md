@@ -1,6 +1,6 @@
 # 秋招资源汇总平台
 
-这是一个自用的静态秋招信息聚合与投递进度管理工具，面向应届生和求职者。它集中展示央国企、私企和外企招聘信息，支持公开招聘源自动更新、按城市发现职位，并允许用户在本机记录每条招聘信息的投递状态。
+这是一个自用的静态广东秋招信息聚合与投递进度管理工具，面向应届生和求职者。它集中展示广东 21 个城市的央国企、私企和外企招聘信息，支持公开招聘源自动更新、按城市发现职位，并允许用户在本机记录每条招聘信息的投递状态。
 
 ## 快速开始
 
@@ -12,14 +12,16 @@ python -m http.server 5173
 
 然后访问 <http://localhost:5173/>。也可以使用任意其他静态文件服务器，平台不需要后端服务。
 
-页面会优先读取 `data/jobs.generated.js` 中的公开职位快照，并与 24 条内置示例数据合并。同步快照缺失、为空或格式无效时，页面会自动回退到示例数据。
+页面会优先读取 `data/jobs.generated.js` 中的广东公开职位快照，并与 5 条广东内置示例数据合并。同步快照缺失、为空或格式无效时，页面会自动回退到广东示例数据。
 
 ## 自动更新招聘信息
 
-- `data/sources.json` 保存公开招聘来源。目前接入 Greenhouse Job Board、Lever Postings，以及有明确开源许可的国内校招社区聚合 JSON，均无需密钥。
+- `data/sources.json` 保存公开招聘来源。目前接入 Greenhouse Job Board、Lever Postings，以及有明确开源许可的国内校招社区聚合 JSON，均无需密钥；所有来源最终都经过广东范围过滤。
 - `scripts/sync-jobs.mjs` 负责拉取、规范化城市、去重、校验 HTTPS 链接，并同时生成 `data/jobs.generated.json` 和可通过 `file://` 加载的 `data/jobs.generated.js`。
-- 某个来源失败时只隔离该来源，并保留上一份有效快照；其他来源仍可继续更新。
+- 某个来源失败时只隔离该来源，并保留上一份有效广东快照；来源会标记为 stale，其他来源仍可继续更新。来源成功读取但上游更新时间超过 14 天时，也会标记为 stale。
 - `.github/workflows/sync-jobs.yml` 支持手动执行，并每 6 小时自动运行一次。测试通过且岗位内容确有变化时，才提交新的快照。
+
+同步快照只接受广东、广州、深圳、珠海、汕头、佛山、韶关、河源、梅州、惠州、汕尾、东莞、中山、江门、阳江、湛江、茂名、肇庆、清远、潮州、揭阳、云浮；“广东/全省/地点未细分”使用空城市字段表示。全国或不限地点只有在来源明确包含广东时才保留，不能因为“全国招聘”自动推断广东。
 
 本地手动同步：
 
@@ -27,22 +29,22 @@ python -m http.server 5173
 npm run sync
 ```
 
-当前预置 Airbnb Greenhouse、Palantir Lever 两个企业公开源，以及 xiaozhao-radar 国内校招社区聚合源。社区源覆盖约千条校招信息，并会把一条多城市岗位拆成可独立筛选的城市记录；页面会显示“社区聚合”标签。所有记录都应通过企业官网再次核验，第三方许可与归属见 `THIRD_PARTY_NOTICES.md`，字段契约详见 `data/README.md`。
+当前预置 Airbnb Greenhouse、Palantir Lever 两个企业公开源，以及 xiaozhao-radar 国内校招社区聚合源。同步器会显示每个来源的健康状态和广东记录数；本次快照中的社区记录会把一条多城市岗位拆成可独立筛选的广东城市记录，页面会显示“社区聚合”标签。所有记录都应通过企业官网再次核验，第三方许可与归属见 `THIRD_PARTY_NOTICES.md`，字段契约详见 `data/README.md`。
 
 若 GitHub 仓库启用了严格分支保护，需要允许该工作流写入内容，或把工作流改成自动创建数据更新 PR，否则定时任务可以抓取但无法提交快照。
 
 ## 城市职位与投递状态助手
 
-- 先选择国内省份和城市，再点击“获取该城市秋招”。页面会显示等待状态，重新读取 `data/jobs.generated.json` 的最新同步快照，完成后只列出该城市岗位；网络失败时回退到本机最近数据。
+- 页面默认进入广东范围；选择广东城市后点击“获取该城市信息”，会重新读取 `data/jobs.generated.json` 的最新同步快照，完成后只列出该城市岗位；网络失败时回退到本机最近数据。未选择具体城市时显示广东全省，地点未细分岗位也会保留。
 - 城市结果可以继续与关键词、企业性质、截止时间、投递状态组合筛选，并展示匹配岗位数、来源数和最后同步时间。
-- “获取”表示读取仓库当前已接入来源的最新快照，不代表覆盖全网全部岗位。没有后端搜索服务时，静态网站无法实时遍历所有企业官网；页面会明确展示来源范围，投递前仍需进入企业官网核验。
+- “获取”表示读取仓库当前已接入来源的最新快照，不代表覆盖全网全部岗位。没有后端搜索服务时，静态网站无法实时遍历所有企业官网；页面会展示岗位数、企业数、来源数和来源健康状态，投递前仍需进入企业官网核验。
 - “投递状态助手”允许选择职位并粘贴招聘邮件、短信或通知文本，在浏览器本地识别已投递、笔试、面试、Offer、淘汰等状态。
 - 助手只给出建议、置信度和命中依据；必须点击确认才会更新状态。通知文本不会上传，也不会写入 localStorage。
 - 自动同步刷新后，同一岗位的本地状态优先；已产生投递进度但后来从公开来源下架的岗位仍会保留，未投递的下架岗位会自动移除。
 
 ## 数据与本地持久化
 
-- `data.js` 提供 `globalThis.INITIAL_RECRUITMENT_DATA`，包含 24 条可直接用于演示的初始化记录。
+- `data.js` 提供 `globalThis.INITIAL_RECRUITMENT_DATA`，包含 5 条广东可直接用于演示的初始化记录。
 - `data.js` 中的日期和招聘链接是演示数据；日期是模拟的 2026 年 8—10 月秋招时间，请务必以企业官方招聘页面为准。所有初始化记录和新同步职位均默认“未投递”，自动同步记录会显示独立的来源标签。
 - 首次打开时，前端只把用户进度和必要的历史记录写入 localStorage，不会把完整招聘快照复制进去；用户后续修改状态时写回 `autumn-recruitment-tracker:v2`。同步刷新只覆盖招聘字段，不覆盖同 ID 的本地投递状态。
 - “恢复示例数据”一类操作只应清除该 key 并重新复制初始化数组，不会影响浏览器其他站点的数据。
@@ -75,7 +77,7 @@ npm run sync
 | `statusUpdatedAt` | ISO 8601 string | 最近一次状态变更时间 |
 | `isDemo` | boolean | 是否为演示数据；初始化记录均为 `true` |
 
-同时，数据文件还暴露了 `globalThis.RECRUITMENT_STATUS_OPTIONS`、`globalThis.RECRUITMENT_COMPANY_TYPES` 和 `globalThis.RECRUITMENT_DATA_META`，方便界面复用枚举和演示数据提示。
+同时，数据文件还暴露了 `globalThis.RECRUITMENT_STATUS_OPTIONS`、`globalThis.RECRUITMENT_COMPANY_TYPES`、`globalThis.RECRUITMENT_DATA_META`、`globalThis.RECRUITMENT_FOCUS_REGION` 和 `globalThis.RECRUITMENT_DOMESTIC_LOCATIONS`，方便界面复用枚举、广东范围和演示数据提示。
 
 自动同步快照通过 `globalThis.RECRUITMENT_SYNC_PAYLOAD` 暴露，顶层包含 `schemaVersion`、`generatedAt`、`sources` 和 `records`。同步记录使用 `jobCategories`，前端会兼容转换为现有的 `categories`；并增加 `sourceId`、`sourceName`、`sourceType`、`sourceUpdatedAt` 和 `fetchedAt`。公开来源未提供开放或截止日期时，对应字段为空，页面显示“待公布”。
 
