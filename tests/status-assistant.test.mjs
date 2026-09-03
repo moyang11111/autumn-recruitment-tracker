@@ -41,6 +41,10 @@ function loadApp({ payload, stored, legacyStored, storageRef } = {}) {
 }
 
 const app = loadApp();
+const exampleProvenanceText = app.getDataProvenanceText();
+assert.equal(exampleProvenanceText.kind, "示例数据");
+assert.equal(exampleProvenanceText.jobs, "同步岗位：0 · 示例岗位：5");
+assert.doesNotMatch(app.getDataNoteText(), /自动同步|实时|全量覆盖/);
 
 const terminalInference = app.inferStatusFromNotice("恭喜获得 offer，但我决定拒绝 offer，感谢理解。");
 assert.equal(terminalInference.status, "已接受 / 已拒绝 offer");
@@ -169,6 +173,37 @@ assert.equal(communityProgressApp.data.find((record) => record.id === communityN
 const communityCompactProgress = JSON.parse(communityStorageRef.storage.getItem("autumn-recruitment-tracker:v2")).progress;
 assert.equal(communityCompactProgress.some((entry) => entry.id === communityNewRecord.id && entry.recordKey), true);
 
+const communityFallbackUrl = "https://github.com/example/community";
+const communityFallbackStoredRecord = {
+  ...communityOldRecord,
+  id: "community-fallback-job-a",
+  campusUrl: communityFallbackUrl,
+  categories: ["相同企业岗位"],
+  status: "已投递",
+  statusUpdatedAt: "2026-08-31T16:00:00.000Z",
+};
+const communityFallbackRecord = {
+  ...communityFallbackStoredRecord,
+  status: "未投递",
+  statusUpdatedAt: "1970-01-01T00:00:00.000Z",
+};
+const communityFallbackOtherRecord = {
+  ...communityFallbackRecord,
+  id: "community-fallback-job-b",
+  categories: ["另一个岗位"],
+};
+const communityFallbackStorageRef = {};
+const communityFallbackApp = loadApp({
+  payload: { records: [communityFallbackRecord, communityFallbackOtherRecord] },
+  stored: JSON.stringify([communityFallbackStoredRecord]),
+  storageRef: communityFallbackStorageRef,
+});
+assert.equal(communityFallbackApp.data.find((record) => record.id === communityFallbackRecord.id).status, "已投递");
+assert.equal(communityFallbackApp.data.find((record) => record.id === communityFallbackOtherRecord.id).status, "未投递");
+const communityFallbackProgress = JSON.parse(communityFallbackStorageRef.storage.getItem("autumn-recruitment-tracker:v2")).progress;
+assert.equal(communityFallbackProgress.some((entry) => entry.id === communityFallbackRecord.id && !entry.recordKey), true);
+assert.equal(communityFallbackProgress.some((entry) => entry.id === communityFallbackOtherRecord.id), false);
+
 const compactHistoryRecord = {
   ...app.initialRecords[2],
   id: "compact-retired-submitted",
@@ -236,5 +271,54 @@ assert.equal(app.resolveRecruitmentData({ records: [] }).info.mode, "example");
 assert.equal(app.resolveRecruitmentData({ records: [{ id: "bad" }] }).info.mode, "example");
 assert.equal(app.resolveRecruitmentData({ schemaVersion: 999, records: [sourceRecord] }).info.mode, "example");
 assert.equal(app.resolveRecruitmentData({ generatedAt: "not-a-time", records: [sourceRecord] }).info.mode, "example");
+
+const presentationRecord = {
+  ...app.initialRecords[0],
+  id: "sync-presentation-record",
+  companyName: "同步展示企业",
+  sourceId: "presentation-source",
+  sourceName: "Fixture 自动同步源",
+  sourceType: "community-json",
+  sourceKind: "sync",
+  isDemo: false,
+  campusUrl: "https://jobs.example.com/sync-presentation",
+};
+const presentationApp = loadApp({
+  payload: {
+    schemaVersion: 1,
+    generatedAt: "2026-09-02T06:00:00.000Z",
+    sources: [{ id: "presentation-source", name: "Fixture 自动同步源", status: "ok", recordCount: 1 }],
+    records: [presentationRecord],
+  },
+});
+const presentationSummary = presentationApp.calculateSnapshotSummary(presentationApp.data);
+assert.equal(presentationSummary.syncJobCount, 1);
+assert.equal(presentationSummary.exampleJobCount, 5);
+assert.equal(presentationSummary.syncCompanyCount, 1);
+assert.equal(presentationSummary.exampleCompanyCount, 5);
+assert.equal(presentationApp.calculateDiscoverySummary(presentationApp.data).sourceCount, 1);
+assert.equal(presentationApp.dataInfo.label, "自动同步数据");
+const provenanceText = presentationApp.getDataProvenanceText();
+assert.equal(provenanceText.kind, "自动同步数据");
+assert.equal(provenanceText.jobs, "同步岗位：1 · 示例岗位：5");
+assert.equal(provenanceText.companies, "同步企业：1 · 示例企业：5");
+assert.match(provenanceText.source, /同步来源：Fixture 自动同步源/);
+assert.match(provenanceText.source, /示例数据另计 5 条/);
+assert.doesNotMatch(provenanceText.lastSync, /实时|全量覆盖/);
+const dataNote = presentationApp.getDataNoteText();
+assert.match(dataNote, /1 条自动同步岗位、1 家企业/);
+assert.match(dataNote, /另有 5 条内置示例（不计入同步统计）/);
+assert.doesNotMatch(dataNote, /实时|全量覆盖/);
+
+const csv = app.makeCsv([app.initialRecords[0], presentationRecord]);
+const csvRows = csv.replace(/^\uFEFF/, "").trimEnd().split("\r\n");
+assert.match(csvRows[0], /"sourceType","isDemo"$/);
+assert.match(csvRows[1], /"demo","true"$/);
+assert.match(csvRows[2], /"community-json","false"$/);
+
+const stylesheet = fs.readFileSync(path.join(ROOT, "styles.css"), "utf8");
+const categoryTagStyles = stylesheet.match(/\.category-tag\s*\{([\s\S]*?)\}/)?.[1] || "";
+assert.match(categoryTagStyles, /white-space:\s*normal/);
+assert.match(categoryTagStyles, /overflow-wrap:\s*anywhere/);
 
 console.log("status assistant tests passed");

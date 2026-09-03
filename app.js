@@ -64,7 +64,7 @@
     records: [],
     dataInfo: {
       mode: "example",
-      label: "广东示例数据",
+      label: "示例数据",
       sourceName: EXAMPLE_SOURCE_NAME,
       lastSyncAt: "",
     },
@@ -165,8 +165,26 @@
     }
   }
 
+  function isCommunityFallbackUrl(record) {
+    if (record?.sourceType !== "community-json") return false;
+    const campusUrl = safeCampusUrl(record.campusUrl);
+    if (!campusUrl) return false;
+    try {
+      const url = new URL(campusUrl);
+      const hostname = url.hostname.toLowerCase();
+      const pathSegments = url.pathname.split("/").filter(Boolean);
+      return (hostname === "github.com" || hostname === "www.github.com")
+        && pathSegments.length === 2;
+    } catch {
+      return false;
+    }
+  }
+
   function communityProgressKey(record) {
     if (record?.sourceType !== "community-json") return "";
+    // A generic GitHub repository is only a source-level fallback URL. Keep
+    // these records isolated by their stable job ID instead of the shared URL.
+    if (isCommunityFallbackUrl(record)) return "";
     const campusUrl = safeCampusUrl(record.campusUrl);
     if (!campusUrl) return "";
     return [
@@ -502,6 +520,7 @@
       city,
       categories,
       campusUrl,
+      sourceType: pickFirstString(record.sourceType) || (sourceKind === "example" ? "demo" : ""),
       isDemo: sourceKind === "example",
       sourceKind,
       sourceName: pickFirstString(record.sourceName, record.source, sourceName) || sourceName,
@@ -566,7 +585,7 @@
         syncRecords: [],
         info: {
           mode: "example",
-          label: "广东示例数据",
+          label: "示例数据",
           sourceName: EXAMPLE_SOURCE_NAME,
           lastSyncAt: "",
           sourceCount: 0,
@@ -588,7 +607,7 @@
         syncRecords: [],
         info: {
           mode: "example",
-          label: "广东示例数据",
+          label: "示例数据",
           sourceName: EXAMPLE_SOURCE_NAME,
           lastSyncAt: "",
           sourceCount: 0,
@@ -608,7 +627,7 @@
       syncRecords: dedupedSyncRecords,
       info: {
         mode: "sync",
-        label: "广东自动同步 + 示例数据",
+        label: "自动同步数据",
         sourceName: syncMeta.sourceName,
         lastSyncAt: inferredLastSyncAt,
         sourceCount: syncMeta.sourceCount,
@@ -715,6 +734,8 @@
       "校招官网",
       "投递状态",
       "状态更新时间",
+      "sourceType",
+      "isDemo",
     ];
     const rows = records.map((record) => [
       record.companyName,
@@ -727,6 +748,8 @@
       record.campusUrl,
       record.status,
       record.statusUpdatedAt,
+      record.sourceType || (isExampleRecord(record) ? "demo" : ""),
+      record.isDemo === true,
     ]);
     return `\uFEFF${[header, ...rows].map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
   }
@@ -958,6 +981,7 @@
   }
 
   function isExampleRecord(record) {
+    if (record?.sourceKind === "sync") return false;
     return record?.sourceKind === "example" || record?.isDemo === true;
   }
 
@@ -1323,8 +1347,9 @@
   }
 
   function calculateDiscoverySummary(records = state.records) {
-    const sources = new Set(records.map((record) => sourceNameForRecord(record)).filter(Boolean));
-    const recordSyncTime = records
+    const syncRecords = focusRecords(records).filter((record) => !isExampleRecord(record));
+    const sources = new Set(syncRecords.map((record) => sourceNameForRecord(record)).filter(Boolean));
+    const recordSyncTime = syncRecords
       .map((record) => record?.lastSyncAt)
       .find((value) => isValidTimestamp(value));
     return {
@@ -1338,41 +1363,73 @@
 
   function calculateSnapshotSummary(records = state.records) {
     const focusedRecords = focusRecords(records);
+    const syncRecords = focusedRecords.filter((record) => !isExampleRecord(record));
+    const exampleRecords = focusedRecords.filter(isExampleRecord);
     const sourceEntries = Array.isArray(state.dataInfo.sourceEntries) ? state.dataInfo.sourceEntries : [];
-    const sourceNames = new Set(focusedRecords.map((record) => sourceNameForRecord(record)).filter(Boolean));
+    const sourceNames = new Set(syncRecords.map((record) => sourceNameForRecord(record)).filter(Boolean));
     const sourceCount = sourceEntries.length || sourceNames.size;
     const healthySourceCount = sourceEntries.filter((source) => source.status === "ok" && !source.stale).length;
     const staleSourceCount = sourceEntries.filter((source) => source.status !== "ok" || source.stale).length;
     return {
       jobCount: focusedRecords.length,
       companyCount: new Set(focusedRecords.map((record) => record.companyName).filter(Boolean)).size,
+      syncJobCount: syncRecords.length,
+      syncCompanyCount: new Set(syncRecords.map((record) => record.companyName).filter(Boolean)).size,
+      exampleJobCount: exampleRecords.length,
+      exampleCompanyCount: new Set(exampleRecords.map((record) => record.companyName).filter(Boolean)).size,
       sourceCount,
       healthySourceCount: sourceEntries.length > 0 ? healthySourceCount : sourceNames.size,
       staleSourceCount,
     };
   }
 
+  function getDataProvenanceText() {
+    const summary = calculateSnapshotSummary();
+    const isSync = state.dataInfo.mode === "sync";
+    return {
+      kind: isSync ? "自动同步数据" : "示例数据",
+      source: isSync
+        ? `同步来源：${state.dataInfo.sourceName || DEFAULT_SYNC_SOURCE_NAME}；示例数据另计 ${summary.exampleJobCount} 条`
+        : `来源：${EXAMPLE_SOURCE_NAME}`,
+      jobs: `同步岗位：${summary.syncJobCount} · 示例岗位：${summary.exampleJobCount}`,
+      companies: `同步企业：${summary.syncCompanyCount} · 示例企业：${summary.exampleCompanyCount}`,
+      sources: `同步来源：${summary.sourceCount}`,
+      health: isSync
+        ? `同步来源健康：${summary.healthySourceCount}/${summary.sourceCount} 正常`
+        : "同步来源健康：无（当前仅示例数据）",
+      lastSync: isSync
+        ? (state.dataInfo.lastSyncAt
+          ? `同步时间：${formatSyncTime(state.dataInfo.lastSyncAt)}（仅同步记录）`
+          : "同步时间：暂无（同步快照未提供时间）")
+        : "同步时间：暂无（当前仅示例数据）",
+    };
+  }
+
+  function getDataNoteText() {
+    if (state.dataInfo.mode === "sync") {
+      const summary = calculateSnapshotSummary();
+      const staleNote = summary.staleSourceCount > 0
+        ? `有 ${summary.staleSourceCount} 个来源异常或数据过旧，已标记为 stale；来源失败时会保留上一份广东快照。`
+        : "当前来源均读取成功。";
+      return `已加载 ${summary.syncJobCount} 条自动同步岗位、${summary.syncCompanyCount} 家企业；另有 ${summary.exampleJobCount} 条内置示例（不计入同步统计）。${staleNote}空日期显示为待公布，投递前请以企业官方页面为准。`;
+    }
+    return typeof dataMeta.dateNote === "string" && dataMeta.dateNote.trim()
+      ? dataMeta.dateNote
+      : "开放时间与截止时间为演示日期，请以企业官方页面为准。";
+  }
+
   function updateDataProvenance() {
     if (!hasDocument) return;
     const summary = calculateSnapshotSummary();
-    if (dom.dataSourceKind) dom.dataSourceKind.textContent = state.dataInfo.label || "广东示例数据";
-    if (dom.dataSourceName) {
-      const suffix = state.dataInfo.mode === "sync" ? "（含内置示例）" : "";
-      dom.dataSourceName.textContent = `来源：${state.dataInfo.sourceName || EXAMPLE_SOURCE_NAME}${suffix}`;
-    }
-    if (dom.dataLastSync) {
-      dom.dataLastSync.textContent = state.dataInfo.lastSyncAt
-        ? `最后同步：${formatSyncTime(state.dataInfo.lastSyncAt)}`
-        : "最后同步：暂无（广东示例数据）";
-    }
-    if (dom.dataSnapshotJobs) dom.dataSnapshotJobs.textContent = `岗位：${summary.jobCount}`;
-    if (dom.dataSnapshotCompanies) dom.dataSnapshotCompanies.textContent = `企业：${summary.companyCount}`;
-    if (dom.dataSnapshotSources) dom.dataSnapshotSources.textContent = `来源：${summary.sourceCount}`;
+    const provenance = getDataProvenanceText();
+    if (dom.dataSourceKind) dom.dataSourceKind.textContent = provenance.kind;
+    if (dom.dataSourceName) dom.dataSourceName.textContent = provenance.source;
+    if (dom.dataLastSync) dom.dataLastSync.textContent = provenance.lastSync;
+    if (dom.dataSnapshotJobs) dom.dataSnapshotJobs.textContent = provenance.jobs;
+    if (dom.dataSnapshotCompanies) dom.dataSnapshotCompanies.textContent = provenance.companies;
+    if (dom.dataSnapshotSources) dom.dataSnapshotSources.textContent = provenance.sources;
     if (dom.dataSourceHealth) {
-      const healthText = state.dataInfo.mode === "sync"
-        ? `来源健康：${summary.healthySourceCount}/${summary.sourceCount} 正常`
-        : "来源健康：内置示例";
-      dom.dataSourceHealth.textContent = healthText;
+      dom.dataSourceHealth.textContent = provenance.health;
       dom.dataSourceHealth.classList.toggle("is-stale", summary.staleSourceCount > 0);
     }
   }
@@ -1696,7 +1753,7 @@
     removeStoredRecords();
     state.dataInfo = {
       mode: "example",
-      label: "广东示例数据",
+      label: "示例数据",
       sourceName: EXAMPLE_SOURCE_NAME,
       lastSyncAt: "",
     };
@@ -1806,17 +1863,7 @@
 
   function updateDataNote() {
     if (!dom.dataNote) return;
-    if (state.dataInfo.mode === "sync") {
-      const summary = calculateSnapshotSummary();
-      const staleNote = summary.staleSourceCount > 0
-        ? `有 ${summary.staleSourceCount} 个来源异常或数据过旧，已标记为 stale；来源失败时会保留上一份广东快照。`
-        : "当前来源均读取成功。";
-      dom.dataNote.textContent = `已加载广东自动同步招聘信息，共 ${summary.jobCount} 条岗位、${summary.companyCount} 家企业；${staleNote}空日期显示为待公布，投递前请以企业官方页面为准。`;
-      return;
-    }
-    dom.dataNote.textContent = typeof dataMeta.dateNote === "string" && dataMeta.dateNote.trim()
-      ? dataMeta.dateNote
-      : "开放时间与截止时间为演示日期，请以企业官方页面为准。";
+    dom.dataNote.textContent = getDataNoteText();
   }
 
   function init() {
@@ -1850,6 +1897,8 @@
     calculateStats,
     calculateSnapshotSummary,
     calculateDiscoverySummary,
+    getDataProvenanceText,
+    getDataNoteText,
     availableDomesticLocations,
     fetchLatestRecruitmentPayload,
     requestCityRecruitment,
@@ -1865,6 +1914,7 @@
     isDateOnly,
     isHttpsUrl,
     safeCampusUrl,
+    isCommunityFallbackUrl,
     isValidStoredRecord,
     serializeStoredState,
     isOptionalDate,

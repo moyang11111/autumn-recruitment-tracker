@@ -83,7 +83,7 @@ app.state.filters.province = "广东";
 app.state.filters.city = "深圳";
 const discovery = app.calculateDiscoverySummary(app.filterRecords(records, app.state.filters));
 assert.equal(discovery.matchCount, 1);
-assert.equal(discovery.sourceCount, 1);
+assert.equal(discovery.sourceCount, 0, "城市来源数只统计同步记录，不把示例来源计入");
 assert.equal(discovery.province, "广东");
 assert.equal(discovery.city, "深圳");
 
@@ -110,6 +110,10 @@ app.state.dataInfo = {
 assert.deepEqual(JSON.parse(JSON.stringify(app.calculateSnapshotSummary(records))), {
   jobCount: 2,
   companyCount: 2,
+  syncJobCount: 1,
+  syncCompanyCount: 1,
+  exampleJobCount: 1,
+  exampleCompanyCount: 1,
   sourceCount: 3,
   healthySourceCount: 1,
   staleSourceCount: 2,
