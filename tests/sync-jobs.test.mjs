@@ -159,6 +159,122 @@ test("正常同步 Greenhouse 与 Lever，规范化字段并忽略危险岗位�
   assert.equal(mock.calls.every(({ url }) => url.startsWith("https://")), true);
 });
 
+test("Greenhouse 与 Lever 多广东城市按城市生成稳定 ID并按城市去重", async () => {
+  const cases = [
+    {
+      source: greenhouseSource,
+      url: "https://boards-api.greenhouse.io/v1/boards/fixture/jobs?content=true",
+      makeJob: (location) => ({
+        id: "greenhouse-multi-city",
+        title: "多城市岗位",
+        absolute_url: "https://boards.greenhouse.io/fixture/jobs/greenhouse-multi-city",
+        location: { name: location },
+      }),
+      makeBody: (location) => {
+        const job = cases[0].makeJob(location);
+        return { jobs: [job, { ...job }] };
+      },
+    },
+    {
+      source: leverSource,
+      url: "https://api.lever.co/v0/postings/fixture?mode=json",
+      makeJob: (location) => ({
+        id: "lever-multi-city",
+        text: "多城市岗位",
+        hostedUrl: "https://jobs.lever.co/fixture/lever-multi-city",
+        categories: { location },
+      }),
+      makeBody: (location) => {
+        const job = cases[1].makeJob(location);
+        return [job, { ...job }];
+      },
+    },
+  ];
+
+  for (const testCase of cases) {
+    const run = (location) => syncJobs({
+      sources: [testCase.source],
+      fetchImpl: mockFetch({ [testCase.url]: testCase.makeBody(location) }).fetchImpl,
+      now: NOW,
+    });
+    const forward = await run("广州、深圳");
+    const reverse = await run("深圳、广州");
+    const forwardIds = Object.fromEntries(forward.records.map((record) => [record.city, record.id]));
+    const reverseIds = Object.fromEntries(reverse.records.map((record) => [record.city, record.id]));
+
+    assert.equal(forward.records.length, 2, `${testCase.source.type} 每个广东城市都应保留一条记录`);
+    assert.equal(new Set(forward.records.map((record) => record.id)).size, 2);
+    assert.deepEqual(forward.records.map((record) => record.city).sort(), ["广州", "深圳"]);
+    assert.deepEqual(reverseIds, forwardIds, `${testCase.source.type} 的城市 ID 应与地点顺序无关`);
+    assert.equal(forward.sources[0].recordCount, 2);
+  }
+});
+
+test("来源成功返回空岗位时默认保留上一版广东快照并标记 error/stale", async () => {
+  const cases = [
+    {
+      source: greenhouseSource,
+      url: "https://boards-api.greenhouse.io/v1/boards/fixture/jobs?content=true",
+      body: { jobs: [] },
+      old: previousRecord(),
+    },
+    {
+      source: leverSource,
+      url: "https://api.lever.co/v0/postings/fixture?mode=json",
+      body: [],
+      old: normalizeJob({
+        id: "old-lever",
+        text: "旧 Lever 岗位",
+        hostedUrl: "https://jobs.lever.co/fixture/old-lever",
+        categories: { location: "深圳" },
+      }, leverSource, EARLIER),
+    },
+  ];
+
+  for (const testCase of cases) {
+    const payload = await syncJobs({
+      sources: [testCase.source],
+      previousPayload: {
+        schemaVersion: 1,
+        generatedAt: EARLIER,
+        sources: [{ id: testCase.source.id, status: "ok", lastCheckedAt: EARLIER, recordCount: 1 }],
+        records: [testCase.old],
+      },
+      fetchImpl: mockFetch({ [testCase.url]: testCase.body }).fetchImpl,
+      now: NOW,
+    });
+
+    assert.equal(payload.sources[0].status, "error", `${testCase.source.type} 空响应不应视为成功`);
+    assert.equal(payload.sources[0].stale, true);
+    assert.equal(payload.sources[0].recordCount, 1);
+    assert.match(payload.sources[0].error, /空|empty/i);
+    assert.deepEqual(payload.records, [testCase.old]);
+  }
+});
+
+test("来源显式 allowEmpty 时允许合法空结果且不回退旧记录", async () => {
+  const source = { ...greenhouseSource, allowEmpty: true };
+  const old = previousRecord();
+  const payload = await syncJobs({
+    sources: [source],
+    previousPayload: {
+      schemaVersion: 1,
+      generatedAt: EARLIER,
+      sources: [{ id: source.id, status: "ok", lastCheckedAt: EARLIER, recordCount: 1 }],
+      records: [old],
+    },
+    fetchImpl: mockFetch({
+      "https://boards-api.greenhouse.io/v1/boards/fixture/jobs?content=true": { jobs: [] },
+    }).fetchImpl,
+    now: NOW,
+  });
+
+  assert.equal(payload.sources[0].status, "ok");
+  assert.equal(payload.sources[0].recordCount, 0);
+  assert.equal(payload.sources[0].stale, undefined);
+  assert.deepEqual(payload.records, []);
+});
+
 test("社区聚合源会拆分多城市岗位并保留来源更新时间", async () => {
   const jobs = {
     updated: "2026-08-11",
@@ -167,7 +283,7 @@ test("社区聚合源会拆分多城市岗位并保留来源更新时间", async
       {
         c: "城市科技",
         p: "后端开发、产品经理",
-        l: "北京/深圳",
+        l: "广州/深圳",
         w: "批次:27届秋招正式批",
         d: "2026-10-10",
         t: "互联网",
@@ -192,10 +308,10 @@ test("社区聚合源会拆分多城市岗位并保留来源更新时间", async
     now: NOW,
   });
 
-  assert.equal(payload.records.length, 2);
+  assert.equal(payload.records.length, 3);
   assert.deepEqual(
     payload.records.filter((record) => record.companyName === "城市科技").map((record) => record.city).sort(),
-    ["深圳"],
+    ["广州", "深圳"],
   );
   const shenzhen = payload.records.find((record) => record.companyName === "城市科技" && record.city === "深圳");
   assert.equal(shenzhen.province, "广东");
@@ -209,7 +325,7 @@ test("社区聚合源会拆分多城市岗位并保留来源更新时间", async
   assert.equal(fallback.companyType, "央国企");
   assert.equal(fallback.campusUrl, communitySource.campusUrl);
   assert.equal(fallback.deadline, "");
-  assert.equal(payload.sources[0].recordCount, 2);
+  assert.equal(payload.sources[0].recordCount, 3);
   assert.equal(payload.sources[0].sourceUpdatedAt, "2026-08-11T00:00:00.000Z");
   assert.equal(payload.sources[0].stale, true, "成功抓取但上游更新时间超过阈值时应标记 stale");
 });
@@ -218,7 +334,7 @@ test("社区聚合多城市规范化不会因相同投递链接互相去重", ()
   const records = normalizeJobs({
     c: "同链接企业",
     p: "研发岗位",
-    l: "广州、深圳、杭州",
+    l: "广州、深圳",
     u: "https://jobs.example.com/campus/same",
   }, communitySource, NOW);
   assert.deepEqual(records.map((record) => [record.province, record.city]), [
@@ -327,13 +443,14 @@ test("社区聚合会拒绝 null、空对象和缺少公司或岗位的信息", 
 test("来源失败时隔离错误并保留上一快照及投递状态", async () => {
   const greenhouseUrl = "https://boards-api.greenhouse.io/v1/boards/fixture/jobs?content=true";
   const leverUrl = "https://api.lever.co/v0/postings/fixture?mode=json";
+  const emptyAllowedLever = { ...leverSource, allowEmpty: true };
   const mock = mockFetch({
     [greenhouseUrl]: new Error("fixture unavailable"),
     [leverUrl]: [],
   });
   const old = previousRecord();
   const payload = await syncJobs({
-    sources: [greenhouseSource, leverSource],
+    sources: [greenhouseSource, emptyAllowedLever],
     previousPayload: {
       schemaVersion: 1,
       generatedAt: EARLIER,
@@ -437,7 +554,7 @@ test("重复岗位按稳定 ID/链接去重，输入顺序不影响输出", asyn
   assert.equal(payloadA.records.length, 1);
   assert.equal(payloadA.records[0].sourceUpdatedAt, "2026-08-31T00:00:00.000Z");
   assert.deepEqual(payloadA, payloadB);
-  assert.equal(stableRecordId("gh-fixture", "same-id"), payloadA.records[0].id);
+  assert.equal(stableRecordId("gh-fixture", "same-id|广东|深圳"), payloadA.records[0].id);
   assert.equal(deduplicateRecords([...payloadA.records, ...payloadA.records]).length, 1);
 });
 
@@ -462,6 +579,19 @@ test("城市映射覆盖中文、英文和未知地点", () => {
   assert.deepEqual(normalizeCity("上海市"), { province: "上海", city: "上海" });
   assert.deepEqual(normalizeCity("Remote"), { province: "", city: "" });
   assert.deepEqual(normalizeCity("Austin, TX"), { province: "TX", city: "Austin" });
+});
+
+test("岗位 URL 解码 HTML entity，异常年份截止日期被清空", () => {
+  const record = normalizeJob({
+    id: "cleaning-fixture",
+    title: "清洗岗位",
+    absolute_url: "https://boards.greenhouse.io/fixture/jobs/cleaning-fixture?source=campus&amp;ref=summer",
+    location: { name: "深圳" },
+    closeDate: "0202-05-14",
+  }, greenhouseSource, NOW);
+
+  assert.equal(record.campusUrl, "https://boards.greenhouse.io/fixture/jobs/cleaning-fixture?source=campus&ref=summer");
+  assert.equal(record.deadline, "");
 });
 
 test("广东范围覆盖 21 个城市，并保留省级未细分地点", () => {
@@ -497,7 +627,15 @@ test("同步边界排除其他省份，多地点只保留广东，全国必须�
     l: "广州/上海/东莞",
     u: "https://jobs.example.com/mixed",
   }, communitySource, NOW);
-  assert.deepEqual(mixed.map((record) => record.city), ["广州", "东莞"]);
+  assert.equal(mixed.length, 0, "明确外省与广东城市冲突时应排除整条职位");
+  for (const scope of ["广东全省招聘", "广东省内多个城市", "广东省内（多个城市）", "粤港澳大湾区"]) {
+    assert.deepEqual(
+      normalizeJobs({ c: `广东范围-${scope}`, p: "岗位", l: scope, u: `https://jobs.example.com/${encodeURIComponent(scope)}` }, communitySource, NOW)
+        .map((record) => [record.province, record.city]),
+      [["广东", ""]],
+      `${scope} 应保留为未指定城市的广东省级记录`,
+    );
+  }
   assert.equal(normalizeJobs({ c: "外省企业", p: "岗位", l: "杭州", u: "https://jobs.example.com/hangzhou" }, communitySource, NOW).length, 0);
   assert.equal(normalizeJobs({ c: "全国企业", p: "岗位", l: "全国", u: "https://jobs.example.com/nationwide" }, communitySource, NOW).length, 0);
   assert.deepEqual(
@@ -513,7 +651,7 @@ test("同步边界排除其他省份，多地点只保留广东，全国必须�
   assert.deepEqual(
     normalizeJobs({ c: "默认广东企业", p: "岗位", l: "全国", u: "https://jobs.example.com/default-guangdong" }, { ...communitySource, defaultProvince: "广东" }, NOW)
       .map((record) => [record.province, record.city]),
-    [["广东", ""]],
+    [],
   );
   assert.equal(filterGuangdongRecords([
     ...mixed,
@@ -569,8 +707,9 @@ test("广东快照的 JSON 与 JS 表示一致且不含其他省份", () => {
 test("超时只影响当前来源，其他来源仍可完成", async () => {
   const slowUrl = "https://boards-api.greenhouse.io/v1/boards/fixture/jobs?content=true";
   const fastUrl = "https://api.lever.co/v0/postings/fixture?mode=json";
+  const emptyAllowedLever = { ...leverSource, allowEmpty: true };
   const payload = await syncJobs({
-    sources: [greenhouseSource, leverSource],
+    sources: [greenhouseSource, emptyAllowedLever],
     fetchImpl: async (url) => {
       if (url === slowUrl) return new Promise(() => {});
       return response([]);

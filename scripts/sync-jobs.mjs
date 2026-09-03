@@ -262,6 +262,10 @@ function text(value) {
   return String(value).replace(/[\u0000-\u001f\u007f]/g, " ").trim();
 }
 
+function decodeHtmlEntities(value) {
+  return text(value).replace(/&amp;/gi, "&");
+}
+
 function cleanList(values) {
   const result = [];
   const seen = new Set();
@@ -307,8 +311,9 @@ export function isHttpsUrl(value) {
 }
 
 function safeUrl(value) {
-  if (!isHttpsUrl(value)) return "";
-  return new URL(String(value).trim()).toString();
+  const decoded = decodeHtmlEntities(value);
+  if (!isHttpsUrl(decoded)) return "";
+  return new URL(decoded.trim()).toString();
 }
 
 export function normalizeTimestamp(value, fallback = "") {
@@ -339,6 +344,8 @@ function requireTimestamp(value) {
 
 function isDateOnly(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const year = Number(value.slice(0, 4));
+  if (year < 1900 || year > 9999) return false;
   const date = new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
@@ -346,7 +353,8 @@ function isDateOnly(value) {
 export function normalizeDateOnly(value) {
   if (value instanceof Date || typeof value === "number") {
     const timestamp = normalizeTimestamp(value);
-    return timestamp ? timestamp.slice(0, 10) : "";
+    const date = timestamp ? timestamp.slice(0, 10) : "";
+    return isDateOnly(date) ? date : "";
   }
 
   const raw = text(value);
@@ -354,7 +362,8 @@ export function normalizeDateOnly(value) {
   const datePrefix = raw.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
   if (datePrefix) return isDateOnly(datePrefix) ? datePrefix : "";
   const timestamp = normalizeTimestamp(raw);
-  return timestamp ? timestamp.slice(0, 10) : "";
+  const date = timestamp ? timestamp.slice(0, 10) : "";
+  return isDateOnly(date) ? date : "";
 }
 
 export function normalizeSource(source, index = 0) {
@@ -383,6 +392,7 @@ export function normalizeSource(source, index = 0) {
     boardToken,
     site,
     enabled: raw.enabled !== false && raw.active !== false,
+    allowEmpty: raw.allowEmpty === true,
     timeoutMs: Number.isFinite(timeoutCandidate) && timeoutCandidate > 0
       ? Math.floor(timeoutCandidate)
       : DEFAULT_TIMEOUT_MS,
@@ -615,7 +625,13 @@ function canonicalLocationParts(value) {
 }
 
 const REMOTE_LOCATION_PATTERN = /^(remote|remoteonly|hybrid|multiplelocations|variouslocations|worldwide|全球|不限|远程|远程办公|全国|全省)$/i;
+const NATIONAL_SCOPE_PATTERN = /^(nationwide|worldwide|global|全球|不限|全国|全省)$/i;
 const NATIONAL_SCOPE_WITH_GUANGDONG_PATTERN = /(?:nationwide|worldwide|global|全国|全球|不限).*guangdong|guangdong.*(?:nationwide|worldwide|global|全国|全球|不限)|(?:全国|全球|不限).*广东|广东.*(?:全国|全球|不限)/i;
+const GUANGDONG_SCOPE_LOCATION_SET = new Set([
+  "广东全省招聘",
+  "广东省内多个城市",
+  "粤港澳大湾区",
+].map(normalizeLocationToken));
 
 export function normalizeLocation(value, fallbackProvince = "", fallbackCity = "") {
   const parts = canonicalLocationParts(value);
@@ -624,6 +640,10 @@ export function normalizeLocation(value, fallbackProvince = "", fallbackCity = "
   const searchText = raw || fallbackRaw;
   const normalizedSearch = normalizeLocationToken(searchText);
 
+  if (GUANGDONG_SCOPE_LOCATION_SET.has(normalizedSearch)) {
+    return { province: GUANGDONG_PROVINCE, city: "" };
+  }
+
   if (normalizedSearch && !REMOTE_LOCATION_PATTERN.test(normalizedSearch)) {
     const known = CITY_ALIASES.find(({ alias }) => normalizedSearch.includes(alias));
     if (known) return { province: known.province, city: known.city };
@@ -631,6 +651,10 @@ export function normalizeLocation(value, fallbackProvince = "", fallbackCity = "
 
   if (NATIONAL_SCOPE_WITH_GUANGDONG_PATTERN.test(normalizedSearch)) {
     return { province: GUANGDONG_PROVINCE, city: "" };
+  }
+
+  if (NATIONAL_SCOPE_PATTERN.test(normalizedSearch)) {
+    return { province: "", city: "" };
   }
 
   const provinceCandidates = [parts.province, raw, fallbackProvince].map(text).filter(Boolean);
@@ -675,6 +699,15 @@ export function isGuangdongLocation(location) {
 
 export function isGuangdongRecord(record) {
   return isGuangdongLocation(record);
+}
+
+function hasConflictingLocations(locations) {
+  const hasGuangdong = locations.some(isGuangdongLocation);
+  const hasExplicitOutsideProvince = locations.some((location) => {
+    const province = text(location?.province);
+    return province && province !== GUANGDONG_PROVINCE;
+  });
+  return hasGuangdong && hasExplicitOutsideProvince;
 }
 
 export function filterGuangdongRecords(records) {
@@ -849,7 +882,7 @@ function normalizeJobAtLocation(job, source, now, location) {
     cleanList([rawJobCategories(raw, source)]).join("|"),
   ].join("|");
   const upstreamId = rawJobId(raw);
-  const idKey = source.type === "community-json" && upstreamId !== undefined
+  const idKey = upstreamId !== undefined
     ? `${text(upstreamId)}|${location.province}|${location.city}`
     : upstreamId;
   const id = stableRecordId(source.id, idKey, fallbackKey);
@@ -889,6 +922,7 @@ export function normalizeJobs(job, sourceInput, nowInput) {
     ? greenhouseLocation(raw)
     : (source.type === "lever" ? leverLocation(raw) : communityLocation(raw));
   const locations = normalizeLocations(locationValue, source.defaultProvince, source.defaultCity);
+  if (hasConflictingLocations(locations)) return [];
   return locations
     .filter(isGuangdongLocation)
     .map((location) => normalizeJobAtLocation(raw, source, now, location))
@@ -1018,7 +1052,9 @@ function recordCandidateKeys(record) {
     ? record.__dedupeUrl
     : record?.campusUrl;
   const url = canonicalUrl(dedupeUrl);
-  if (url) keys.push(`url:${url}`);
+  if (url) {
+    keys.push(`url:${text(record?.province)}\u0000${text(record?.city)}\u0000${url}`);
+  }
   return keys;
 }
 
@@ -1123,7 +1159,7 @@ function previousRecordForSource(record, source, now) {
     statusUpdatedAt: state.statusUpdatedAt,
     isDemo: record.isDemo === true,
   });
-  if (typeof record.campusUrl === "string" && isHttpsUrl(record.campusUrl)) retained.campusUrl = record.campusUrl.trim();
+  if (typeof record.campusUrl === "string" && isHttpsUrl(record.campusUrl)) retained.campusUrl = safeUrl(record.campusUrl);
   for (const key of ["sourceUpdatedAt", "fetchedAt", "statusUpdatedAt"]) {
     if (typeof record[key] === "string" && !Number.isNaN(Date.parse(record[key]))) retained[key] = record[key];
   }
@@ -1205,6 +1241,9 @@ export async function syncJobs(optionsOrSources = {}, maybeOptions = {}) {
         fetchImpl,
         timeoutMs: options.timeoutMs ?? source.timeoutMs ?? defaultTimeoutMs,
       });
+      if (jobs.length === 0 && !source.allowEmpty) {
+        throw new Error("来源返回空岗位列表");
+      }
       const latestSourceUpdatedAt = jobs
         .map((job) => sourceUpdatedAt(job))
         .filter(Boolean)
