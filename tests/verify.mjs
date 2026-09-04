@@ -45,6 +45,8 @@ function assert(condition, message) {
 
 function isDateOnly(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const year = Number(value.slice(0, 4));
+  if (year < 1900 || year > 9999) return false;
   const date = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
@@ -57,7 +59,10 @@ function isDateInDemoWindow(value) {
 function isValidUrl(value) {
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && Boolean(url.hostname);
+    return url.protocol === "https:"
+      && Boolean(url.hostname)
+      && !url.username
+      && !url.password;
   } catch {
     return false;
   }
@@ -140,9 +145,14 @@ function validateGeneratedSnapshot(context) {
   assert(fs.existsSync(GENERATED_JS_FILE), "缺少 data/jobs.generated.js");
   if (!fs.existsSync(GENERATED_JSON_FILE) || !fs.existsSync(GENERATED_JS_FILE)) return;
 
+  const generatedJsonSource = fs.readFileSync(GENERATED_JSON_FILE, "utf8");
+  const generatedJsSource = fs.readFileSync(GENERATED_JS_FILE, "utf8");
+  assert(!generatedJsonSource.includes("&amp;"), "生成 JSON 快照禁止保留字面 &amp; URL 实体");
+  assert(!generatedJsSource.includes("&amp;"), "生成 JS 快照禁止保留字面 &amp; URL 实体");
+
   let jsonPayload;
   try {
-    jsonPayload = JSON.parse(fs.readFileSync(GENERATED_JSON_FILE, "utf8"));
+    jsonPayload = JSON.parse(generatedJsonSource);
   } catch (error) {
     fail(`jobs.generated.json 无法解析：${error.message}`);
     return;
@@ -180,7 +190,15 @@ function validateGeneratedSnapshot(context) {
     assert(record.province === focusRegion?.province, `${prefix}含有非广东记录`);
     assert(record.city === "" || focusRegion?.cities?.includes(record.city), `${prefix}含有非广东城市：${record.city}`);
     assert(STATUSES.has(record.status), `${prefix} status 无效：${record.status}`);
-    assert(typeof record.campusUrl === "string" && isValidUrl(record.campusUrl), `${prefix} campusUrl 必须是 HTTPS URL`);
+    assert(typeof record.campusUrl === "string" && isValidUrl(record.campusUrl), `${prefix} campusUrl 必须是无凭据 HTTPS URL`);
+    for (const field of ["openDate", "deadline"]) {
+      const value = record[field];
+      assert(value === "" || isDateOnly(value), `${prefix} ${field} 必须是合理年份的有效 YYYY-MM-DD 日期：${value}`);
+      if (isDateOnly(value)) {
+        const year = Number(value.slice(0, 4));
+        assert(year >= 1900 && year <= 9999, `${prefix} ${field} 年份超出合理范围：${value}`);
+      }
+    }
   }
   for (const [index, source] of jsonPayload.sources.entries()) {
     const prefix = `生成来源第 ${index + 1} 条`;

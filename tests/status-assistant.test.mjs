@@ -74,6 +74,30 @@ for (const [notice, expected] of [
 const unsafeText = '<img src=x onerror="alert(1)">';
 assert.equal(app.escapeHtml(unsafeText), "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
 assert.equal(app.safeCampusUrl("javascript:alert(1)"), "");
+assert.equal(
+  app.safeCampusUrl("https://jobs.example.com/campus?source=campus&amp;ref=summer"),
+  "https://jobs.example.com/campus?source=campus&ref=summer",
+);
+for (const unsafeUrl of [
+  "https://user:password@example.com/campus",
+  "https://user@example.com/campus",
+  "https://:password@example.com/campus",
+]) {
+  assert.equal(app.isHttpsUrl(unsafeUrl), false, `应拒绝含凭据的 URL：${unsafeUrl}`);
+  assert.equal(app.safeCampusUrl(unsafeUrl), "", `应拒绝含凭据的安全 URL：${unsafeUrl}`);
+}
+assert.equal(app.isDateOnly("2026-09-01"), true);
+assert.equal(app.isDateOnly("0202-05-14"), false);
+assert.equal(app.isDateOnly("1899-12-31"), false);
+const invalidDateRecord = {
+  ...app.initialRecords[0],
+  id: "invalid-runtime-date-record",
+  deadline: "0202-05-14",
+};
+assert.equal(
+  app.resolveRecruitmentData({ records: [invalidDateRecord] }).records.some((record) => record.id === invalidDateRecord.id),
+  false,
+);
 
 const sourceRecord = { ...app.initialRecords[0], companyName: "同步后的国家电网", deadline: "", status: "未投递" };
 sourceRecord.jobCategories = sourceRecord.categories;
@@ -170,8 +194,19 @@ const communityProgressApp = loadApp({
 });
 assert.equal(communityProgressApp.data.find((record) => record.id === communityNewRecord.id).status, "已投递");
 assert.equal(communityProgressApp.data.find((record) => record.id === communityNewRecord.id).statusUpdatedAt, communityOldRecord.statusUpdatedAt);
+assert.equal(communityProgressApp.data.filter((record) => record.id === communityOldRecord.id).length, 0);
+assert.equal(communityProgressApp.data.filter((record) => record.campusUrl === communityNewRecord.campusUrl).length, 1);
 const communityCompactProgress = JSON.parse(communityStorageRef.storage.getItem("autumn-recruitment-tracker:v2")).progress;
 assert.equal(communityCompactProgress.some((entry) => entry.id === communityNewRecord.id && entry.recordKey), true);
+
+const sameUrlMergedRecords = app.mergeRecruitmentRecords(
+  [communityOldRecord],
+  [communityNewRecord],
+);
+assert.equal(sameUrlMergedRecords.length, 1);
+assert.equal(sameUrlMergedRecords[0].id, communityNewRecord.id);
+assert.equal(sameUrlMergedRecords[0].status, communityOldRecord.status);
+assert.equal(sameUrlMergedRecords[0].statusUpdatedAt, communityOldRecord.statusUpdatedAt);
 
 const communityFallbackUrl = "https://github.com/example/community";
 const communityFallbackStoredRecord = {
@@ -222,6 +257,45 @@ const compactHistoryApp = loadApp({
   }),
 });
 assert.equal(compactHistoryApp.data.some((record) => record.id === compactHistoryRecord.id && record.status === "已投递"), true);
+
+const retiringRecord = {
+  ...app.initialRecords[3],
+  id: "sync-retiring-after-application",
+  companyName: "下架后仍保留的企业",
+  sourceId: "retiring-source",
+  sourceName: "Fixture 招聘源",
+  sourceType: "community-json",
+  sourceKind: "sync",
+  isDemo: false,
+  campusUrl: "https://jobs.example.com/campus/retiring-after-application",
+  status: "未投递",
+  statusUpdatedAt: "1970-01-01T00:00:00.000Z",
+};
+const liveRecord = {
+  ...retiringRecord,
+  id: "sync-live-after-application",
+  companyName: "仍在快照中的企业",
+  campusUrl: "https://jobs.example.com/campus/live-after-application",
+};
+const firstSnapshotStorageRef = {};
+const firstSnapshotApp = loadApp({
+  payload: { records: [retiringRecord, liveRecord] },
+  storageRef: firstSnapshotStorageRef,
+});
+assert.equal(firstSnapshotApp.updateStatus(retiringRecord.id, "已投递"), true);
+const firstSnapshotStorageValue = firstSnapshotStorageRef.storage.getItem("autumn-recruitment-tracker:v2");
+const firstSnapshotState = JSON.parse(firstSnapshotStorageValue);
+assert.equal(firstSnapshotState.history.some((record) => (
+  record.id === retiringRecord.id && record.status === "已投递"
+)), true);
+const secondSnapshotApp = loadApp({
+  payload: { records: [liveRecord] },
+  stored: firstSnapshotStorageValue,
+});
+const retainedRetiringRecords = secondSnapshotApp.data.filter((record) => record.id === retiringRecord.id);
+assert.equal(retainedRetiringRecords.length, 1);
+assert.equal(retainedRetiringRecords[0].companyName, retiringRecord.companyName);
+assert.equal(retainedRetiringRecords[0].status, "已投递");
 
 const manuallyResetProgress = {
   ...genuineManualProgress,

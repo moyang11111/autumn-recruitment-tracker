@@ -36,6 +36,8 @@
   const DEFAULT_STATUS = statusOptions[0] || "未投递";
   const DEFAULT_STATUS_UPDATED_AT = "1970-01-01T00:00:00.000Z";
   const STORAGE_SCHEMA_VERSION = 2;
+  const MIN_RECRUITMENT_YEAR = 1900;
+  const MAX_RECRUITMENT_YEAR = 9999;
   const EXAMPLE_SOURCE_NAME = "内置示例";
   const DEFAULT_SYNC_SOURCE_NAME = "自动同步源";
   const MAX_RENDERED_RECORDS = 80;
@@ -102,9 +104,11 @@
     const sourceCategories = Array.isArray(record?.categories)
       ? record.categories
       : (Array.isArray(record?.jobCategories) ? record.jobCategories : []);
+    const safeUrl = safeCampusUrl(record?.campusUrl);
     return {
       ...record,
       categories: [...sourceCategories],
+      campusUrl: safeUrl || record?.campusUrl || "",
     };
   }
 
@@ -125,6 +129,8 @@
 
   function isDateOnly(value) {
     if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const year = Number(value.slice(0, 4));
+    if (year < MIN_RECRUITMENT_YEAR || year > MAX_RECRUITMENT_YEAR) return false;
     const date = new Date(`${value}T00:00:00Z`);
     return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
   }
@@ -147,22 +153,32 @@
   }
 
   function isHttpsUrl(value) {
-    if (typeof value !== "string" || !value.trim()) return false;
+    const decoded = decodeHtmlEntities(value);
+    if (typeof decoded !== "string" || !decoded.trim()) return false;
+    if (/[\u0000-\u001f\u007f]/.test(decoded)) return false;
     try {
-      const url = new URL(value);
-      return url.protocol === "https:" && Boolean(url.hostname);
+      const url = new URL(decoded.trim());
+      return url.protocol === "https:"
+        && Boolean(url.hostname)
+        && !url.username
+        && !url.password;
     } catch {
       return false;
     }
   }
 
   function safeCampusUrl(value) {
-    if (!isHttpsUrl(value)) return "";
+    const decoded = decodeHtmlEntities(value);
+    if (!isHttpsUrl(decoded)) return "";
     try {
-      return new URL(value).href;
+      return new URL(decoded.trim()).href;
     } catch {
       return "";
     }
+  }
+
+  function decodeHtmlEntities(value) {
+    return typeof value === "string" ? value.replace(/&amp;/gi, "&") : value;
   }
 
   function isCommunityFallbackUrl(record) {
@@ -196,12 +212,49 @@
     ].join("\u0000");
   }
 
+  function recordJobUrlKey(record) {
+    if (!record || isCommunityFallbackUrl(record)) return "";
+    const campusUrl = safeCampusUrl(record.campusUrl);
+    if (!campusUrl) return "";
+    try {
+      const url = new URL(campusUrl);
+      url.hash = "";
+      const normalizedPath = url.pathname.replace(/\/+$/, "").toLocaleLowerCase();
+      if ([
+        "",
+        "/career",
+        "/careers",
+        "/campus",
+        "/job",
+        "/jobs",
+        "/posting",
+        "/postings",
+        "/recruit",
+        "/recruitment",
+        "/campus-recruitment",
+      ].includes(normalizedPath)) return "";
+      return [
+        record.province || "",
+        record.city || "",
+        url.href,
+      ].join("\u0000");
+    } catch {
+      return "";
+    }
+  }
+
   function recordProgressKeys(record) {
     const keys = [];
     if (typeof record?.id === "string" && record.id.trim()) keys.push(`id:${record.id}`);
     const stableKey = communityProgressKey(record);
     if (stableKey) keys.push(`community:${stableKey}`);
+    const jobUrlKey = recordJobUrlKey(record);
+    if (jobUrlKey) keys.push(`url:${jobUrlKey}`);
     return keys;
+  }
+
+  function hasMeaningfulProgress(record) {
+    return Boolean(progressEntryForRecord(record));
   }
 
   function isValidStoredRecord(record) {
@@ -260,7 +313,7 @@
       province: record.province,
       city: record.city,
       categories: [...categories],
-      campusUrl: record.campusUrl,
+      campusUrl: safeCampusUrl(record.campusUrl),
       sourceId: record.sourceId || "",
       sourceName: record.sourceName || "",
       sourceType: record.sourceType || "",
@@ -323,19 +376,17 @@
     }
   }
 
-  function serializeStoredState(records, currentIds = state.currentRecordIds) {
+  function serializeStoredState(records, _currentIds = state.currentRecordIds) {
     const safeRecords = Array.isArray(records) ? records.filter(isValidStoredRecord) : [];
-    const normalizedCurrentIds = currentIds instanceof Set
-      ? currentIds
-      : new Set(Array.isArray(currentIds) ? currentIds.filter((id) => typeof id === "string") : []);
-    const effectiveCurrentIds = normalizedCurrentIds.size > 0 || safeRecords.length === 0
-      ? normalizedCurrentIds
-      : new Set(safeRecords.map((record) => record.id));
+    // Keep compact details for every non-default record with user progress so
+    // a later snapshot can restore a retired job after its current ID vanishes.
+    // The currentIds argument remains accepted for compatibility with callers
+    // from the pre-history format, but default records are still omitted.
     return {
       schemaVersion: STORAGE_SCHEMA_VERSION,
       progress: safeRecords.map(progressEntryForRecord).filter(Boolean),
       history: safeRecords
-        .filter((record) => !effectiveCurrentIds.has(record.id) && record.status !== DEFAULT_STATUS)
+        .filter((record) => record.status !== DEFAULT_STATUS)
         .map(compactHistoryRecord),
     };
   }
@@ -545,34 +596,108 @@
       }));
   }
 
+  function recordMergeKeys(record) {
+    const keys = [];
+    if (typeof record?.id === "string" && record.id.trim()) keys.push(`id:${record.id}`);
+    const jobUrlKey = recordJobUrlKey(record);
+    if (jobUrlKey) keys.push(`url:${jobUrlKey}`);
+    return keys;
+  }
+
+  function compareStatusCandidates(left, right) {
+    if ((left.priority ?? 0) !== (right.priority ?? 0)) {
+      return (right.priority ?? 0) - (left.priority ?? 0);
+    }
+    const leftUpdatedAt = Date.parse(left.record?.statusUpdatedAt || "");
+    const rightUpdatedAt = Date.parse(right.record?.statusUpdatedAt || "");
+    if (leftUpdatedAt !== rightUpdatedAt) return rightUpdatedAt - leftUpdatedAt;
+    return (left.index ?? 0) - (right.index ?? 0);
+  }
+
   function mergeRecruitmentRecords(exampleRecords, syncRecords) {
-    const byId = new Map();
-    exampleRecords.filter(isFocusRecord).forEach((record) => {
-      if (record?.id) byId.set(record.id, cloneRecord(record));
+    const candidates = [
+      ...(Array.isArray(exampleRecords) ? exampleRecords.filter(isFocusRecord) : [])
+        .map((record, index) => ({ record, priority: 0, index })),
+      ...(Array.isArray(syncRecords) ? syncRecords.filter(isFocusRecord) : [])
+        .map((record, index) => ({ record, priority: 1, index: (exampleRecords?.length || 0) + index })),
+    ].filter(({ record }) => typeof record?.id === "string" && record.id.trim());
+    const parent = candidates.map((_, index) => index);
+    const find = (index) => {
+      let rootIndex = index;
+      while (parent[rootIndex] !== rootIndex) rootIndex = parent[rootIndex];
+      while (parent[index] !== index) {
+        const next = parent[index];
+        parent[index] = rootIndex;
+        index = next;
+      }
+      return rootIndex;
+    };
+    const union = (left, right) => {
+      const leftRoot = find(left);
+      const rightRoot = find(right);
+      if (leftRoot !== rightRoot) parent[rightRoot] = leftRoot;
+    };
+    const keyOwners = new Map();
+    candidates.forEach((candidate, index) => {
+      recordMergeKeys(candidate.record).forEach((key) => {
+        if (keyOwners.has(key)) union(index, keyOwners.get(key));
+        else keyOwners.set(key, index);
+      });
     });
-    syncRecords.filter(isFocusRecord).forEach((record) => {
-      if (!record?.id) return;
-      const previous = byId.get(record.id);
-      const mergedStatus = statusOptions.includes(record.status)
-        ? record.status
-        : (previous?.status || DEFAULT_STATUS);
-      const merged = {
-        ...(previous || {}),
-        ...cloneRecord(record),
-        isDemo: false,
-        sourceKind: "sync",
-        sourceName: record.sourceName || DEFAULT_SYNC_SOURCE_NAME,
-        lastSyncAt: record.lastSyncAt || "",
-        status: mergedStatus,
-        statusUpdatedAt: mergedStatus === DEFAULT_STATUS
-          ? DEFAULT_STATUS_UPDATED_AT
-          : (isValidTimestamp(record.statusUpdatedAt)
-          ? record.statusUpdatedAt
-          : (previous?.statusUpdatedAt || DEFAULT_STATUS_UPDATED_AT)),
-      };
-      byId.set(record.id, merged);
+    const groups = new Map();
+    candidates.forEach((candidate, index) => {
+      const rootIndex = find(index);
+      if (!groups.has(rootIndex)) groups.set(rootIndex, []);
+      groups.get(rootIndex).push(candidate);
     });
-    return [...byId.values()];
+    return [...groups.values()]
+      .sort((left, right) => Math.min(...left.map((candidate) => candidate.index))
+        - Math.min(...right.map((candidate) => candidate.index)))
+      .map((group) => {
+        const primary = [...group].sort((left, right) => (
+          (right.priority - left.priority) || (left.index - right.index)
+        ))[0];
+        const base = primary.priority > 0
+          ? {
+            ...cloneRecord(primary.record),
+            isDemo: false,
+            sourceKind: "sync",
+            sourceName: pickFirstString(primary.record.sourceName) || DEFAULT_SYNC_SOURCE_NAME,
+            lastSyncAt: pickFirstString(primary.record.lastSyncAt),
+          }
+          : cloneRecord(primary.record);
+        const statusCandidate = group
+          .filter(({ record }) => hasMeaningfulProgress(record))
+          .sort(compareStatusCandidates)[0];
+        const status = statusCandidate?.record?.status || DEFAULT_STATUS;
+        return {
+          ...base,
+          status,
+          statusUpdatedAt: statusCandidate?.record?.statusUpdatedAt || DEFAULT_STATUS_UPDATED_AT,
+        };
+      });
+  }
+
+  function deduplicateByMergeKeys(records) {
+    const result = [];
+    const keyOwners = new Map();
+    (Array.isArray(records) ? records : []).forEach((record) => {
+      const existingIndex = recordMergeKeys(record)
+        .map((key) => keyOwners.get(key))
+        .find((index) => Number.isInteger(index));
+      if (Number.isInteger(existingIndex)) {
+        const existing = result[existingIndex];
+        if (!hasMeaningfulProgress(existing) && hasMeaningfulProgress(record)) {
+          result[existingIndex] = record;
+          recordMergeKeys(record).forEach((key) => keyOwners.set(key, existingIndex));
+        }
+        return;
+      }
+      const index = result.length;
+      result.push(record);
+      recordMergeKeys(record).forEach((key) => keyOwners.set(key, index));
+    });
+    return result;
   }
 
   function resolveRecruitmentData(...args) {
@@ -661,11 +786,13 @@
       const progress = progressEntryForRecord(record);
       if (progress) {
         if (!progressById.has(`id:${progress.id}`)) addProgressEntry(progress);
-        const stableKey = recordProgressKeys(record).find((key) => key.startsWith("community:"));
-        if (stableKey && !progressById.has(stableKey)) progressById.set(stableKey, progress);
+        recordProgressKeys(record).forEach((key) => {
+          if (!progressById.has(key)) progressById.set(key, progress);
+        });
       }
     });
     const currentIds = new Set(records.map((record) => record.id));
+    const currentMergeKeys = new Set(records.flatMap(recordMergeKeys));
     const mergedRecords = records.map((record) => {
       const stored = recordProgressKeys(record)
         .map((key) => progressById.get(key))
@@ -685,15 +812,19 @@
         const stored = recordProgressKeys(record)
           .map((key) => progressById.get(key))
           .find(Boolean);
-        if (!stored || stored.status === DEFAULT_STATUS || !isValidTimestamp(stored.statusUpdatedAt)) return record;
+        if (!stored || !statusOptions.includes(stored.status) || !isValidTimestamp(stored.statusUpdatedAt)) return record;
         return {
           ...record,
           status: stored.status,
           statusUpdatedAt: stored.statusUpdatedAt,
         };
       })
-      .filter((record) => !currentIds.has(record.id) && record.status !== DEFAULT_STATUS);
-    return [...mergedRecords, ...retainedHistory];
+      .filter((record) => (
+        !currentIds.has(record.id)
+        && !recordMergeKeys(record).some((key) => currentMergeKeys.has(key))
+        && record.status !== DEFAULT_STATUS
+      ));
+    return deduplicateByMergeKeys([...mergedRecords, ...retainedHistory]);
   }
 
   function loadRecords() {
