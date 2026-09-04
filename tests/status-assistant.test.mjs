@@ -46,6 +46,16 @@ assert.equal(exampleProvenanceText.kind, "示例数据");
 assert.equal(exampleProvenanceText.jobs, "同步岗位：0 · 示例岗位：5");
 assert.doesNotMatch(app.getDataNoteText(), /自动同步|实时|全量覆盖/);
 
+const frozenSnapshot = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "jobs.generated.json"), "utf8"));
+const frozenSnapshotApp = loadApp({ payload: frozenSnapshot });
+const frozenSnapshotResolved = frozenSnapshotApp.resolveRecruitmentData(frozenSnapshot);
+assert.equal(frozenSnapshotResolved.syncRecords.length, 619, "冻结快照规范化后应保留 619 条同步岗位");
+assert.equal(
+  frozenSnapshotResolved.records.filter((record) => record.sourceKind === "sync").length,
+  619,
+  "历史为空时当前同步岗位不得因 URL 合并从 619 条减少",
+);
+
 const terminalInference = app.inferStatusFromNotice("恭喜获得 offer，但我决定拒绝 offer，感谢理解。");
 assert.equal(terminalInference.status, "已接受 / 已拒绝 offer");
 assert.equal(terminalInference.isTerminal, true);
@@ -239,6 +249,37 @@ const communityFallbackProgress = JSON.parse(communityFallbackStorageRef.storage
 assert.equal(communityFallbackProgress.some((entry) => entry.id === communityFallbackRecord.id && !entry.recordKey), true);
 assert.equal(communityFallbackProgress.some((entry) => entry.id === communityFallbackOtherRecord.id), false);
 
+const spaPositionRecord = {
+  ...app.initialRecords[0],
+  id: "spa-position-details",
+  companyName: "SPA 招聘企业",
+  sourceId: "spa-fixture",
+  sourceName: "SPA 招聘测试源",
+  sourceType: "community-json",
+  sourceKind: "sync",
+  isDemo: false,
+  campusUrl: "https://spa.example.com/portal/#/positionDetails/123",
+};
+const spaRecruitRecord = {
+  ...spaPositionRecord,
+  id: "spa-recruit",
+  campusUrl: "https://spa.example.com/portal/#/recruit/456",
+};
+const spaPayload = {
+  schemaVersion: 1,
+  generatedAt: "2026-09-02T06:00:00.000Z",
+  records: [spaPositionRecord, spaRecruitRecord],
+};
+const spaApp = loadApp({ payload: spaPayload });
+const spaRecords = spaApp.resolveRecruitmentData(spaPayload).records.filter((record) => (
+  record.id === spaPositionRecord.id || record.id === spaRecruitRecord.id
+));
+assert.equal(spaRecords.length, 2, "不同 SPA fragment 的当前岗位都应保留");
+assert.equal(
+  spaRecords.map((record) => record.campusUrl).sort().join("|"),
+  [spaPositionRecord.campusUrl, spaRecruitRecord.campusUrl].sort().join("|"),
+);
+
 const compactHistoryRecord = {
   ...app.initialRecords[2],
   id: "compact-retired-submitted",
@@ -257,6 +298,92 @@ const compactHistoryApp = loadApp({
   }),
 });
 assert.equal(compactHistoryApp.data.some((record) => record.id === compactHistoryRecord.id && record.status === "已投递"), true);
+
+const positionHistoryRecord = {
+  ...app.initialRecords[2],
+  id: "position-history-old-id",
+  companyName: "完整 URL 历史企业",
+  categories: ["旧类别"],
+  sourceId: "position-history-source",
+  sourceName: "完整 URL 历史源",
+  sourceType: "greenhouse",
+  sourceKind: "sync",
+  isDemo: false,
+  campusUrl: "https://jobs.example.com/company/#/positionDetails/position-42",
+  status: "已投递",
+  statusUpdatedAt: "2026-08-31T10:00:00.000Z",
+};
+const positionCurrentRecord = {
+  ...positionHistoryRecord,
+  id: "position-history-current-id",
+  categories: ["新类别"],
+  status: "未投递",
+  statusUpdatedAt: "1970-01-01T00:00:00.000Z",
+};
+const positionHistoryApp = loadApp({
+  payload: { records: [positionCurrentRecord] },
+  stored: JSON.stringify([positionHistoryRecord]),
+});
+assert.equal(positionHistoryApp.data.filter((record) => record.id === positionHistoryRecord.id).length, 0);
+assert.equal(positionHistoryApp.data.filter((record) => record.id === positionCurrentRecord.id).length, 1);
+assert.equal(positionHistoryApp.data.find((record) => record.id === positionCurrentRecord.id).status, "已投递");
+
+const trackingHistoryRecord = {
+  ...positionHistoryRecord,
+  id: "tracking-history-old-id",
+  campusUrl: "https://jobs.example.com/company/?utm_source=old&recommendCode=campaign-42#/jobs?project=42",
+};
+const trackingCurrentRecord = {
+  ...positionCurrentRecord,
+  id: "tracking-history-current-id",
+  campusUrl: "https://jobs.example.com/company/?utm_medium=feed&recommendCode=campaign-42#/jobs?project=42",
+};
+const trackingHistoryApp = loadApp({
+  payload: { records: [trackingCurrentRecord] },
+  stored: JSON.stringify([trackingHistoryRecord]),
+});
+assert.equal(trackingHistoryApp.data.find((record) => record.id === trackingCurrentRecord.id).status, "已投递");
+
+const semanticUrlCurrentRecord = {
+  ...trackingCurrentRecord,
+  id: "semantic-url-current-id",
+  campusUrl: "https://jobs.example.com/company/?utm_medium=feed&recommendCode=campaign-43#/jobs?project=42",
+};
+const semanticUrlApp = loadApp({
+  payload: { records: [semanticUrlCurrentRecord] },
+  stored: JSON.stringify([trackingHistoryRecord]),
+});
+assert.equal(semanticUrlApp.data.find((record) => record.id === semanticUrlCurrentRecord.id).status, "未投递");
+
+const ambiguousCurrentUrl = "https://jobs.example.com/company/board-2026/#/jobs";
+const ambiguousCurrentRecordA = {
+  ...positionCurrentRecord,
+  id: "ambiguous-current-a",
+  companyName: "共享入口企业",
+  sourceType: "greenhouse",
+  sourceId: "ambiguous-source",
+  campusUrl: ambiguousCurrentUrl,
+};
+const ambiguousCurrentRecordB = {
+  ...ambiguousCurrentRecordA,
+  id: "ambiguous-current-b",
+  categories: ["另一个新类别"],
+};
+const ambiguousHistoryRecord = {
+  ...ambiguousCurrentRecordA,
+  id: "ambiguous-history-old",
+  categories: ["历史类别"],
+  status: "已投递",
+  statusUpdatedAt: "2026-08-31T11:00:00.000Z",
+};
+const ambiguousUrlApp = loadApp({
+  payload: { records: [ambiguousCurrentRecordA, ambiguousCurrentRecordB] },
+  stored: JSON.stringify([ambiguousHistoryRecord]),
+});
+assert.equal(ambiguousUrlApp.data.filter((record) => record.id === ambiguousCurrentRecordA.id).length, 1);
+assert.equal(ambiguousUrlApp.data.filter((record) => record.id === ambiguousCurrentRecordB.id).length, 1);
+assert.equal(ambiguousUrlApp.data.find((record) => record.id === ambiguousCurrentRecordA.id).status, "未投递");
+assert.equal(ambiguousUrlApp.data.find((record) => record.id === ambiguousCurrentRecordB.id).status, "未投递");
 
 const retiringRecord = {
   ...app.initialRecords[3],

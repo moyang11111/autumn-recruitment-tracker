@@ -42,6 +42,7 @@
   const DEFAULT_SYNC_SOURCE_NAME = "自动同步源";
   const MAX_RENDERED_RECORDS = 80;
   const LATEST_SNAPSHOT_URL = "data/jobs.generated.json";
+  const TRACKING_QUERY_PARAMETER_PATTERN = /^(?:utm_|gh_src$|source$)/i;
 
   const STATUS_CLASS_NAMES = Object.freeze({
     未投递: "status-not-applied",
@@ -218,9 +219,11 @@
     if (!campusUrl) return "";
     try {
       const url = new URL(campusUrl);
-      url.hash = "";
+      for (const key of [...url.searchParams.keys()]) {
+        if (TRACKING_QUERY_PARAMETER_PATTERN.test(key)) url.searchParams.delete(key);
+      }
       const normalizedPath = url.pathname.replace(/\/+$/, "").toLocaleLowerCase();
-      if ([
+      const genericPath = [
         "",
         "/career",
         "/careers",
@@ -232,7 +235,9 @@
         "/recruit",
         "/recruitment",
         "/campus-recruitment",
-      ].includes(normalizedPath)) return "";
+      ].includes(normalizedPath);
+      const fragment = url.hash.slice(1).trim();
+      if (genericPath && (!fragment || fragment === "/")) return "";
       return [
         record.province || "",
         record.city || "",
@@ -597,11 +602,31 @@
   }
 
   function recordMergeKeys(record) {
+    // URL keys are intentionally excluded here. A current snapshot can expose
+    // several valid jobs through one shared landing page; only exact IDs may
+    // merge current records. URL keys remain available to history migration
+    // and the explicit example-to-sync reconciliation below.
     const keys = [];
     if (typeof record?.id === "string" && record.id.trim()) keys.push(`id:${record.id}`);
-    const jobUrlKey = recordJobUrlKey(record);
-    if (jobUrlKey) keys.push(`url:${jobUrlKey}`);
     return keys;
+  }
+
+  function uniqueUrlOwners(candidates) {
+    const owners = new Map();
+    const duplicates = new Set();
+    candidates.forEach((candidate) => {
+      const jobUrlKey = recordJobUrlKey(candidate.record);
+      if (!jobUrlKey) return;
+      const key = `url:${jobUrlKey}`;
+      if (duplicates.has(key)) return;
+      if (owners.has(key)) {
+        owners.delete(key);
+        duplicates.add(key);
+        return;
+      }
+      owners.set(key, candidate);
+    });
+    return owners;
   }
 
   function compareStatusCandidates(left, right) {
@@ -620,7 +645,9 @@
         .map((record, index) => ({ record, priority: 0, index })),
       ...(Array.isArray(syncRecords) ? syncRecords.filter(isFocusRecord) : [])
         .map((record, index) => ({ record, priority: 1, index: (exampleRecords?.length || 0) + index })),
-    ].filter(({ record }) => typeof record?.id === "string" && record.id.trim());
+    ]
+      .filter(({ record }) => typeof record?.id === "string" && record.id.trim())
+      .map((candidate, position) => ({ ...candidate, position }));
     const parent = candidates.map((_, index) => index);
     const find = (index) => {
       let rootIndex = index;
@@ -643,6 +670,12 @@
         if (keyOwners.has(key)) union(index, keyOwners.get(key));
         else keyOwners.set(key, index);
       });
+    });
+    const exampleUrlOwners = uniqueUrlOwners(candidates.filter((candidate) => candidate.priority === 0));
+    const syncUrlOwners = uniqueUrlOwners(candidates.filter((candidate) => candidate.priority > 0));
+    exampleUrlOwners.forEach((candidate, key) => {
+      const syncCandidate = syncUrlOwners.get(key);
+      if (syncCandidate) union(candidate.position, syncCandidate.position);
     });
     const groups = new Map();
     candidates.forEach((candidate, index) => {
@@ -768,12 +801,17 @@
     if (!parsedState || typeof parsedState !== "object") return records;
 
     const progressById = new Map();
+    const progressByKey = new Map();
+    const addProgressKey = (key, entry) => {
+      if (!key || !entry) return;
+      if (!progressByKey.has(key)) progressByKey.set(key, new Map());
+      progressByKey.get(key).set(entry.id, entry);
+    };
     const addProgressEntry = (entry) => {
       if (!isValidStoredProgress(entry)) return;
       progressById.set(`id:${entry.id}`, entry);
       if (typeof entry.recordKey === "string" && entry.recordKey.trim()) {
-        const stableKey = `community:${entry.recordKey.trim()}`;
-        if (!progressById.has(stableKey)) progressById.set(stableKey, entry);
+        addProgressKey(`community:${entry.recordKey.trim()}`, entry);
       }
     };
     (Array.isArray(parsedState.progress) ? parsedState.progress : [])
@@ -787,16 +825,38 @@
       if (progress) {
         if (!progressById.has(`id:${progress.id}`)) addProgressEntry(progress);
         recordProgressKeys(record).forEach((key) => {
-          if (!progressById.has(key)) progressById.set(key, progress);
+          if (!key.startsWith("id:")) addProgressKey(key, progress);
         });
       }
     });
     const currentIds = new Set(records.map((record) => record.id));
-    const currentMergeKeys = new Set(records.flatMap(recordMergeKeys));
+    const currentProgressKeyCounts = new Map();
+    records.forEach((record) => {
+      recordProgressKeys(record)
+        .filter((key) => !key.startsWith("id:"))
+        .forEach((key) => currentProgressKeyCounts.set(key, (currentProgressKeyCounts.get(key) || 0) + 1));
+    });
+    const uniqueCurrentProgressKeys = new Set(
+      [...currentProgressKeyCounts.entries()]
+        .filter(([, count]) => count === 1)
+        .map(([key]) => key),
+    );
+    const uniqueProgressForKey = (key) => {
+      if (!uniqueCurrentProgressKeys.has(key)) return null;
+      const candidates = progressByKey.get(key);
+      if (!candidates || candidates.size !== 1) return null;
+      return candidates.values().next().value;
+    };
+    const storedProgressForRecord = (record) => {
+      const byId = progressById.get(`id:${record.id}`);
+      if (byId) return byId;
+      return recordProgressKeys(record)
+        .filter((key) => !key.startsWith("id:"))
+        .map(uniqueProgressForKey)
+        .find(Boolean) || null;
+    };
     const mergedRecords = records.map((record) => {
-      const stored = recordProgressKeys(record)
-        .map((key) => progressById.get(key))
-        .find(Boolean);
+      const stored = storedProgressForRecord(record);
       if (!stored || !statusOptions.includes(stored.status) || !isValidTimestamp(stored.statusUpdatedAt)) {
         return record;
       }
@@ -809,9 +869,7 @@
     });
     const retainedHistory = historicalRecords
       .map((record) => {
-        const stored = recordProgressKeys(record)
-          .map((key) => progressById.get(key))
-          .find(Boolean);
+        const stored = storedProgressForRecord(record);
         if (!stored || !statusOptions.includes(stored.status) || !isValidTimestamp(stored.statusUpdatedAt)) return record;
         return {
           ...record,
@@ -821,7 +879,9 @@
       })
       .filter((record) => (
         !currentIds.has(record.id)
-        && !recordMergeKeys(record).some((key) => currentMergeKeys.has(key))
+        && !recordProgressKeys(record)
+          .filter((key) => !key.startsWith("id:"))
+          .some((key) => Boolean(uniqueProgressForKey(key)))
         && record.status !== DEFAULT_STATUS
       ));
     return deduplicateByMergeKeys([...mergedRecords, ...retainedHistory]);
