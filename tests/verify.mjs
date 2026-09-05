@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DATA_FILE = path.join(ROOT, "data.js");
+const GENERATED_JSON_FILE = path.join(ROOT, "data", "jobs.generated.json");
+const GENERATED_JS_FILE = path.join(ROOT, "data", "jobs.generated.js");
 const INTEGRATION_MODE = process.argv.includes("--integration");
 
 const COMPANY_TYPES = new Set(["央国企", "私企", "外企", "事业单位", "其他"]);
@@ -19,17 +21,11 @@ const STATUSES = new Set([
   "已接受 / 已拒绝 offer",
 ]);
 const REQUIRED_COMPANIES = [
-  "国家电网",
-  "中石油",
-  "中国移动",
-  "中国建筑",
   "华润集团",
   "腾讯",
-  "字节跳动",
   "华为",
-  "美团",
-  "京东",
   "比亚迪",
+  "南方电网",
 ];
 
 const errors = [];
@@ -49,6 +45,8 @@ function assert(condition, message) {
 
 function isDateOnly(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const year = Number(value.slice(0, 4));
+  if (year < 1900 || year > 9999) return false;
   const date = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
@@ -61,7 +59,10 @@ function isDateInDemoWindow(value) {
 function isValidUrl(value) {
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && Boolean(url.hostname);
+    return url.protocol === "https:"
+      && Boolean(url.hostname)
+      && !url.username
+      && !url.password;
   } catch {
     return false;
   }
@@ -87,7 +88,9 @@ function validateData(context) {
   assert(Array.isArray(data), "INITIAL_RECRUITMENT_DATA 必须是数组");
   if (!Array.isArray(data)) return;
 
-  assert(data.length >= 15, `初始化数据至少需要 15 条，当前为 ${data.length} 条`);
+  assert(data.length >= 5, `广东初始化数据至少需要 5 条，当前为 ${data.length} 条`);
+  const focusRegion = context.RECRUITMENT_FOCUS_REGION;
+  assert(focusRegion?.province === "广东" && Array.isArray(focusRegion.cities) && focusRegion.cities.length === 21, "广东范围配置必须包含 21 个城市");
   const ids = new Set();
 
   for (const [index, item] of data.entries()) {
@@ -113,6 +116,7 @@ function validateData(context) {
 
     assert(typeof item.province === "string" && item.province.trim().length > 0, `${prefix} 缺少 province`);
     assert(typeof item.city === "string" && item.city.trim().length > 0, `${prefix} 缺少 city`);
+    assert(item.province === focusRegion.province && focusRegion.cities.includes(item.city), `${prefix} 必须属于广东 21 城：${item.province}/${item.city}`);
     assert(Array.isArray(item.categories), `${prefix} categories 必须是数组`);
     if (Array.isArray(item.categories)) {
       assert(item.categories.length > 0, `${prefix} categories 至少需要一个岗位类别`);
@@ -134,6 +138,76 @@ function validateData(context) {
   assert(typeof meta?.storageKey === "string" && meta.storageKey.length > 0, "需要提供 localStorage storageKey 元数据");
   assert(meta?.storageKey === "autumn-recruitment-tracker:v2", "新版应使用独立的 v2 本地存储，避免旧演示进度覆盖默认状态");
   assert(meta?.schemaVersion === 2, "RECRUITMENT_DATA_META.schemaVersion 应为 2");
+}
+
+function validateGeneratedSnapshot(context) {
+  assert(fs.existsSync(GENERATED_JSON_FILE), "缺少 data/jobs.generated.json");
+  assert(fs.existsSync(GENERATED_JS_FILE), "缺少 data/jobs.generated.js");
+  if (!fs.existsSync(GENERATED_JSON_FILE) || !fs.existsSync(GENERATED_JS_FILE)) return;
+
+  const generatedJsonSource = fs.readFileSync(GENERATED_JSON_FILE, "utf8");
+  const generatedJsSource = fs.readFileSync(GENERATED_JS_FILE, "utf8");
+  assert(!generatedJsonSource.includes("&amp;"), "生成 JSON 快照禁止保留字面 &amp; URL 实体");
+  assert(!generatedJsSource.includes("&amp;"), "生成 JS 快照禁止保留字面 &amp; URL 实体");
+
+  let jsonPayload;
+  try {
+    jsonPayload = JSON.parse(generatedJsonSource);
+  } catch (error) {
+    fail(`jobs.generated.json 无法解析：${error.message}`);
+    return;
+  }
+
+  const jsContext = vm.createContext({});
+  try {
+    vm.runInContext(fs.readFileSync(GENERATED_JS_FILE, "utf8"), jsContext, { filename: GENERATED_JS_FILE });
+  } catch (error) {
+    fail(`jobs.generated.js 无法在 Node VM 中执行：${error.message}`);
+    return;
+  }
+
+  const jsPayload = jsContext.RECRUITMENT_SYNC_PAYLOAD;
+  assert(jsonPayload && typeof jsonPayload === "object" && !Array.isArray(jsonPayload), "生成 JSON 快照必须是对象");
+  assert(jsPayload && typeof jsPayload === "object" && !Array.isArray(jsPayload), "生成 JS 快照必须暴露对象");
+  if (!jsonPayload || !jsPayload) return;
+  assert(JSON.stringify(jsPayload) === JSON.stringify(jsonPayload), "生成 JSON 与 JS 快照内容不一致");
+  assert(jsonPayload.schemaVersion === 1, "生成快照 schemaVersion 必须为 1");
+  assert(Array.isArray(jsonPayload.sources), "生成快照 sources 必须是数组");
+  assert(Array.isArray(jsonPayload.records), "生成快照 records 必须是数组");
+
+  const focusRegion = context.RECRUITMENT_FOCUS_REGION;
+  const ids = new Set();
+  const sourceStatuses = new Set(["not_checked", "ok", "error", "disabled"]);
+  for (const [index, record] of jsonPayload.records.entries()) {
+    const prefix = `生成快照第 ${index + 1} 条`;
+    assert(record && typeof record === "object" && !Array.isArray(record), `${prefix}必须是对象`);
+    if (!record || typeof record !== "object" || Array.isArray(record)) continue;
+    assert(typeof record.id === "string" && record.id.trim(), `${prefix}缺少 id`);
+    if (typeof record.id === "string") {
+      assert(!ids.has(record.id), `生成快照 id 重复：${record.id}`);
+      ids.add(record.id);
+    }
+    assert(record.province === focusRegion?.province, `${prefix}含有非广东记录`);
+    assert(record.city === "" || focusRegion?.cities?.includes(record.city), `${prefix}含有非广东城市：${record.city}`);
+    assert(STATUSES.has(record.status), `${prefix} status 无效：${record.status}`);
+    assert(typeof record.campusUrl === "string" && isValidUrl(record.campusUrl), `${prefix} campusUrl 必须是无凭据 HTTPS URL`);
+    for (const field of ["openDate", "deadline"]) {
+      const value = record[field];
+      assert(value === "" || isDateOnly(value), `${prefix} ${field} 必须是合理年份的有效 YYYY-MM-DD 日期：${value}`);
+      if (isDateOnly(value)) {
+        const year = Number(value.slice(0, 4));
+        assert(year >= 1900 && year <= 9999, `${prefix} ${field} 年份超出合理范围：${value}`);
+      }
+    }
+  }
+  for (const [index, source] of jsonPayload.sources.entries()) {
+    const prefix = `生成来源第 ${index + 1} 条`;
+    assert(source && typeof source === "object" && !Array.isArray(source), `${prefix}必须是对象`);
+    if (!source || typeof source !== "object" || Array.isArray(source)) continue;
+    assert(sourceStatuses.has(source.status), `${prefix} status 无效：${source.status}`);
+    assert(Number.isInteger(source.recordCount) && source.recordCount >= 0, `${prefix} recordCount 无效`);
+    assert(typeof source.stale === "undefined" || source.stale === true, `${prefix} stale 必须为 true 或省略`);
+  }
 }
 
 function readIfExists(fileName) {
@@ -218,6 +292,8 @@ function loadBehaviorApp(storage) {
     RECRUITMENT_STATUS_OPTIONS: context.RECRUITMENT_STATUS_OPTIONS,
     RECRUITMENT_COMPANY_TYPES: context.RECRUITMENT_COMPANY_TYPES,
     RECRUITMENT_DATA_META: context.RECRUITMENT_DATA_META,
+    RECRUITMENT_FOCUS_REGION: context.RECRUITMENT_FOCUS_REGION,
+    RECRUITMENT_DOMESTIC_LOCATIONS: context.RECRUITMENT_DOMESTIC_LOCATIONS,
     localStorage: storage,
     URL,
     console,
@@ -268,10 +344,12 @@ function validateBehavior() {
   assert(csv.includes('"测试, ""企业"""'), "行为检查：CSV 未正确转义逗号和双引号");
   assert(csv.includes('"岗位、测试"'), "行为检查：CSV 未正确合并岗位类别");
 
+  const safeSeedIndex = context.INITIAL_RECRUITMENT_DATA.findIndex((item) => item?.province === "广东");
+  const safeSeed = safeSeedIndex >= 0 ? context.INITIAL_RECRUITMENT_DATA[safeSeedIndex] : null;
   const unsafeData = JSON.parse(JSON.stringify(context.INITIAL_RECRUITMENT_DATA));
-  unsafeData[0].campusUrl = "javascript:alert(1)";
+  if (safeSeedIndex >= 0) unsafeData[safeSeedIndex].campusUrl = "javascript:alert(1)";
   const unsafeApp = loadBehaviorApp(createMemoryStorage(JSON.stringify(unsafeData)));
-  assert(unsafeApp && unsafeApp.data[0].campusUrl === context.INITIAL_RECRUITMENT_DATA[0].campusUrl, "行为检查：不安全存储链接不应进入应用状态");
+  assert(unsafeApp && safeSeed && unsafeApp.data.some((record) => record.id === safeSeed.id && record.campusUrl === safeSeed.campusUrl), "行为检查：不安全存储链接不应进入应用状态");
 
   const failingApp = loadBehaviorApp(createMemoryStorage(null, true));
   assert(failingApp && failingApp.writeRecords(failingApp.data) === false, "行为检查：存储失败应返回 false");
@@ -279,6 +357,7 @@ function validateBehavior() {
 
 const context = loadDataFile();
 validateData(context);
+validateGeneratedSnapshot(context);
 validateIntegration();
 validateBehavior();
 

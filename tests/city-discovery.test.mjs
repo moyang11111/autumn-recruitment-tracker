@@ -11,6 +11,9 @@ vm.runInContext(fs.readFileSync(path.join(ROOT, "data.js"), "utf8"), context);
 vm.runInContext(fs.readFileSync(path.join(ROOT, "app.js"), "utf8"), context);
 const app = context.AutumnRecruitmentApp;
 assert.equal(app.maxRenderedRecords, 80);
+assert.equal(app.state.filters.province, "广东");
+assert.equal(app.state.cityDraft.province, "广东");
+assert.equal(app.data.every((record) => record.province === "广东"), true);
 assert.deepEqual(
   JSON.parse(JSON.stringify(app.sourceBadgeInfo({ sourceType: "community-json", sourceName: "社区源" }))),
   { label: "社区聚合", className: "record-source-community" },
@@ -27,8 +30,8 @@ assert.doesNotMatch(communityLink, /官网/);
 const records = [
   {
     ...app.initialRecords[0],
-    id: "city-beijing-sync",
-    companyName: "北京同步机会",
+    id: "city-outside-sync",
+    companyName: "外省同步机会",
     province: "北京",
     city: "北京",
     deadline: "2099-01-01",
@@ -37,10 +40,10 @@ const records = [
   },
   {
     ...app.initialRecords[1],
-    id: "city-shanghai-sync",
-    companyName: "上海同步机会",
-    province: "上海",
-    city: "上海",
+    id: "city-guangzhou-sync",
+    companyName: "广州同步机会",
+    province: "广东",
+    city: "广州",
     sourceKind: "sync",
     sourceName: "自动源 A",
   },
@@ -64,14 +67,13 @@ const Beijing = app.filterRecords(records, {
   deadline: "",
   status: "",
 });
-assert.equal(Beijing.length, 1);
-assert.equal(Beijing[0].companyName, "北京同步机会");
+assert.equal(Beijing.length, 0, "外省记录不能进入广东筛选结果");
 
 const compatibleFilters = app.filterRecords(records, {
   keyword: "同步",
-  nature: "央国企",
-  province: "北京",
-  city: "北京",
+  nature: records[1].companyType,
+  province: "广东",
+  city: "广州",
   deadline: "open",
   status: "未投递",
 });
@@ -81,7 +83,7 @@ app.state.filters.province = "广东";
 app.state.filters.city = "深圳";
 const discovery = app.calculateDiscoverySummary(app.filterRecords(records, app.state.filters));
 assert.equal(discovery.matchCount, 1);
-assert.equal(discovery.sourceCount, 1);
+assert.equal(discovery.sourceCount, 0, "城市来源数只统计同步记录，不把示例来源计入");
 assert.equal(discovery.province, "广东");
 assert.equal(discovery.city, "深圳");
 
@@ -96,15 +98,39 @@ const emptyCity = app.filterRecords(records, {
 assert.equal(emptyCity.length, 0);
 assert.equal(app.calculateDiscoverySummary(emptyCity).matchCount, 0);
 
+const originalDataInfo = app.state.dataInfo;
+app.state.dataInfo = {
+  mode: "sync",
+  sourceEntries: [
+    { id: "fresh", status: "ok", stale: false },
+    { id: "old", status: "ok", stale: true },
+    { id: "down", status: "error", stale: true },
+  ],
+};
+assert.deepEqual(JSON.parse(JSON.stringify(app.calculateSnapshotSummary(records))), {
+  jobCount: 2,
+  companyCount: 2,
+  syncJobCount: 1,
+  syncCompanyCount: 1,
+  exampleJobCount: 1,
+  exampleCompanyCount: 1,
+  sourceCount: 3,
+  healthySourceCount: 1,
+  staleSourceCount: 2,
+});
+app.state.dataInfo = originalDataInfo;
+
 const domesticOptions = app.availableDomesticLocations(records);
 assert.equal(domesticOptions.some((item) => item.province === "广东" && item.cities.includes("深圳")), true);
+assert.equal(domesticOptions.length, 1);
+assert.equal(domesticOptions[0].cities.length, 21);
 assert.equal(domesticOptions.some((item) => item.province === "加利福尼亚"), false);
 
 let releasePayload;
 const latestPayload = new Promise((resolve) => {
   releasePayload = resolve;
 });
-const request = app.requestCityRecruitment("北京", "北京", async () => ({
+const request = app.requestCityRecruitment("广东", "广州", async () => ({
   ok: true,
   json: () => latestPayload,
 }));
@@ -115,8 +141,10 @@ releasePayload({
   generatedAt: "2026-09-01T12:00:00.000Z",
   sources: [{ id: "city-live", name: "城市实时测试源" }],
   records: [{
-    ...records[0],
-    id: "city-live-beijing",
+    ...records[1],
+    id: "city-live-guangzhou",
+    province: "广东",
+    city: "广州",
     sourceKind: "sync",
     sourceId: "city-live",
     sourceName: "城市实时测试源",
@@ -126,11 +154,16 @@ releasePayload({
 });
 const requested = await request;
 assert.equal(app.state.cityRequest.loading, false);
-assert.equal(app.state.filters.province, "北京");
-assert.equal(app.state.filters.city, "北京");
+assert.equal(app.state.filters.province, "广东");
+assert.equal(app.state.filters.city, "广州");
 assert.equal(requested.records.length > 0, true);
-assert.equal(requested.records.every((record) => record.province === "北京" && record.city === "北京"), true);
+assert.equal(requested.records.every((record) => record.province === "广东" && record.city === "广州"), true);
 assert.equal(requested.refreshed, true);
+
+await assert.rejects(
+  app.requestCityRecruitment("北京", "北京", async () => ({ ok: true, json: async () => ({}) })),
+  /广东城市/,
+);
 
 const unknownDeadline = { ...records[0], openDate: "", deadline: "" };
 assert.equal(app.deadlineState(unknownDeadline.deadline), "unknown");

@@ -7,6 +7,7 @@ export const SCHEMA_VERSION = 1;
 export const DEFAULT_STATUS = "未投递";
 export const DEFAULT_STATUS_UPDATED_AT = "1970-01-01T00:00:00.000Z";
 export const DEFAULT_TIMEOUT_MS = 15_000;
+export const SOURCE_STALE_AFTER_DAYS = 14;
 
 export const VALID_STATUSES = new Set([
   "未投递",
@@ -21,6 +22,13 @@ export const VALID_STATUSES = new Set([
 
 export const VALID_COMPANY_TYPES = new Set(["央国企", "私企", "外企", "事业单位", "其他"]);
 export const VALID_SOURCE_TYPES = new Set(["greenhouse", "lever", "community-json"]);
+
+export const GUANGDONG_PROVINCE = "广东";
+export const GUANGDONG_CITIES = Object.freeze([
+  "广州", "深圳", "珠海", "汕头", "佛山", "韶关", "河源", "梅州", "惠州", "汕尾", "东莞",
+  "中山", "江门", "阳江", "湛江", "茂名", "肇庆", "清远", "潮州", "揭阳", "云浮",
+]);
+const GUANGDONG_CITY_SET = new Set(GUANGDONG_CITIES);
 
 const CONTRACT_RECORD_KEYS = [
   "id",
@@ -50,10 +58,24 @@ const CITY_PROVINCE_PAIRS = [
   ["广东", "广州", ["广州", "广州市", "guangzhou"]],
   ["广东", "深圳", ["深圳", "深圳市", "shenzhen"]],
   ["广东", "珠海", ["珠海", "珠海市", "zhuhai"]],
-  ["广东", "东莞", ["东莞", "东莞市", "dongguan"]],
+  ["广东", "汕头", ["汕头", "汕头市", "shantou"]],
   ["广东", "佛山", ["佛山", "佛山市", "foshan"]],
+  ["广东", "韶关", ["韶关", "韶关市", "shaoguan"]],
+  ["广东", "河源", ["河源", "河源市", "heyuan"]],
+  ["广东", "梅州", ["梅州", "梅州市", "meizhou"]],
   ["广东", "惠州", ["惠州", "惠州市", "huizhou"]],
+  ["广东", "汕尾", ["汕尾", "汕尾市", "shanwei"]],
+  ["广东", "东莞", ["东莞", "东莞市", "dongguan"]],
   ["广东", "中山", ["中山", "中山市", "zhongshan"]],
+  ["广东", "江门", ["江门", "江门市", "jiangmen"]],
+  ["广东", "阳江", ["阳江", "阳江市", "yangjiang"]],
+  ["广东", "湛江", ["湛江", "湛江市", "zhanjiang"]],
+  ["广东", "茂名", ["茂名", "茂名市", "maoming"]],
+  ["广东", "肇庆", ["肇庆", "肇庆市", "zhaoqing"]],
+  ["广东", "清远", ["清远", "清远市", "qingyuan"]],
+  ["广东", "潮州", ["潮州", "潮州市", "chaozhou"]],
+  ["广东", "揭阳", ["揭阳", "揭阳市", "jieyang"]],
+  ["广东", "云浮", ["云浮", "云浮市", "yunfu"]],
   ["浙江", "杭州", ["杭州", "杭州市", "hangzhou"]],
   ["浙江", "宁波", ["宁波", "宁波市", "ningbo"]],
   ["浙江", "温州", ["温州", "温州市", "wenzhou"]],
@@ -164,6 +186,8 @@ const PROVINCE_ALIASES = new Map([
   ["重庆市", "重庆"],
   ["广东", "广东"],
   ["广东省", "广东"],
+  ["广东省内", "广东"],
+  ["广东全省", "广东"],
   ["guangdong", "广东"],
   ["浙江", "浙江"],
   ["浙江省", "浙江"],
@@ -238,6 +262,10 @@ function text(value) {
   return String(value).replace(/[\u0000-\u001f\u007f]/g, " ").trim();
 }
 
+function decodeHtmlEntities(value) {
+  return text(value).replace(/&amp;/gi, "&");
+}
+
 function cleanList(values) {
   const result = [];
   const seen = new Set();
@@ -283,8 +311,9 @@ export function isHttpsUrl(value) {
 }
 
 function safeUrl(value) {
-  if (!isHttpsUrl(value)) return "";
-  return new URL(String(value).trim()).toString();
+  const decoded = decodeHtmlEntities(value);
+  if (!isHttpsUrl(decoded)) return "";
+  return new URL(decoded.trim()).toString();
 }
 
 export function normalizeTimestamp(value, fallback = "") {
@@ -315,6 +344,8 @@ function requireTimestamp(value) {
 
 function isDateOnly(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const year = Number(value.slice(0, 4));
+  if (year < 1900 || year > 9999) return false;
   const date = new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
@@ -322,7 +353,8 @@ function isDateOnly(value) {
 export function normalizeDateOnly(value) {
   if (value instanceof Date || typeof value === "number") {
     const timestamp = normalizeTimestamp(value);
-    return timestamp ? timestamp.slice(0, 10) : "";
+    const date = timestamp ? timestamp.slice(0, 10) : "";
+    return isDateOnly(date) ? date : "";
   }
 
   const raw = text(value);
@@ -330,7 +362,8 @@ export function normalizeDateOnly(value) {
   const datePrefix = raw.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
   if (datePrefix) return isDateOnly(datePrefix) ? datePrefix : "";
   const timestamp = normalizeTimestamp(raw);
-  return timestamp ? timestamp.slice(0, 10) : "";
+  const date = timestamp ? timestamp.slice(0, 10) : "";
+  return isDateOnly(date) ? date : "";
 }
 
 export function normalizeSource(source, index = 0) {
@@ -359,6 +392,7 @@ export function normalizeSource(source, index = 0) {
     boardToken,
     site,
     enabled: raw.enabled !== false && raw.active !== false,
+    allowEmpty: raw.allowEmpty === true,
     timeoutMs: Number.isFinite(timeoutCandidate) && timeoutCandidate > 0
       ? Math.floor(timeoutCandidate)
       : DEFAULT_TIMEOUT_MS,
@@ -493,8 +527,8 @@ function greenhouseLocation(job) {
     job?.location?.city,
     job?.location,
     ...(Array.isArray(job?.offices) ? job.offices.flatMap((office) => [office?.location?.name, office?.location, office?.name]) : []),
-  ];
-  return firstValue(...values);
+  ].filter((value) => value !== null && value !== undefined && text(value));
+  return values.length > 0 ? values : undefined;
 }
 
 function leverLocation(job) {
@@ -503,8 +537,8 @@ function leverLocation(job) {
     job?.location?.name,
     job?.location,
     ...(Array.isArray(job?.locations) ? job.locations.map((location) => location?.name ?? location) : []),
-  ];
-  return firstValue(...values);
+  ].filter((value) => value !== null && value !== undefined && text(value));
+  return values.length > 0 ? values : undefined;
 }
 
 function communityLocation(job) {
@@ -572,6 +606,9 @@ function rawLocationText(value) {
       value.location,
       value.address,
       value.displayName,
+      value.province,
+      value.state,
+      value.region,
     ));
   }
   return text(value);
@@ -587,7 +624,14 @@ function canonicalLocationParts(value) {
   return { city: raw, province: "" };
 }
 
-const REMOTE_LOCATION_PATTERN = /^(remote|remoteonly|hybrid|multiplelocations|variouslocations|worldwide|全球|不限|远程|远程办公|全国)$/i;
+const REMOTE_LOCATION_PATTERN = /^(remote|remoteonly|hybrid|multiplelocations|variouslocations|worldwide|全球|不限|远程|远程办公|全国|全省)$/i;
+const NATIONAL_SCOPE_PATTERN = /^(nationwide|worldwide|global|全球|不限|全国|全省)$/i;
+const NATIONAL_SCOPE_WITH_GUANGDONG_PATTERN = /(?:nationwide|worldwide|global|全国|全球|不限).*guangdong|guangdong.*(?:nationwide|worldwide|global|全国|全球|不限)|(?:全国|全球|不限).*广东|广东.*(?:全国|全球|不限)/i;
+const GUANGDONG_SCOPE_LOCATION_SET = new Set([
+  "广东全省招聘",
+  "广东省内多个城市",
+  "粤港澳大湾区",
+].map(normalizeLocationToken));
 
 export function normalizeLocation(value, fallbackProvince = "", fallbackCity = "") {
   const parts = canonicalLocationParts(value);
@@ -596,9 +640,21 @@ export function normalizeLocation(value, fallbackProvince = "", fallbackCity = "
   const searchText = raw || fallbackRaw;
   const normalizedSearch = normalizeLocationToken(searchText);
 
+  if (GUANGDONG_SCOPE_LOCATION_SET.has(normalizedSearch)) {
+    return { province: GUANGDONG_PROVINCE, city: "" };
+  }
+
   if (normalizedSearch && !REMOTE_LOCATION_PATTERN.test(normalizedSearch)) {
     const known = CITY_ALIASES.find(({ alias }) => normalizedSearch.includes(alias));
     if (known) return { province: known.province, city: known.city };
+  }
+
+  if (NATIONAL_SCOPE_WITH_GUANGDONG_PATTERN.test(normalizedSearch)) {
+    return { province: GUANGDONG_PROVINCE, city: "" };
+  }
+
+  if (NATIONAL_SCOPE_PATTERN.test(normalizedSearch)) {
+    return { province: "", city: "" };
   }
 
   const provinceCandidates = [parts.province, raw, fallbackProvince].map(text).filter(Boolean);
@@ -634,6 +690,30 @@ export function normalizeCity(value, fallbackProvince = "", fallbackCity = "") {
   return normalizeLocation(value, fallbackProvince, fallbackCity);
 }
 
+export function isGuangdongLocation(location) {
+  if (!location || typeof location !== "object") return false;
+  if (text(location.province) !== GUANGDONG_PROVINCE) return false;
+  const city = text(location.city);
+  return city === "" || GUANGDONG_CITY_SET.has(city);
+}
+
+export function isGuangdongRecord(record) {
+  return isGuangdongLocation(record);
+}
+
+function hasConflictingLocations(locations) {
+  const hasGuangdong = locations.some(isGuangdongLocation);
+  const hasExplicitOutsideProvince = locations.some((location) => {
+    const province = text(location?.province);
+    return province && province !== GUANGDONG_PROVINCE;
+  });
+  return hasGuangdong && hasExplicitOutsideProvince;
+}
+
+export function filterGuangdongRecords(records) {
+  return (Array.isArray(records) ? records : []).filter(isGuangdongRecord);
+}
+
 export function normalizeLocations(value, fallbackProvince = "", fallbackCity = "") {
   const raw = rawLocationText(value);
   const tokens = raw
@@ -644,18 +724,35 @@ export function normalizeLocations(value, fallbackProvince = "", fallbackCity = 
     .filter(Boolean);
   const candidates = tokens.length > 0 ? tokens : [raw];
   const locations = [];
+  const provinceOnlyLocations = [];
   const seen = new Set();
 
   for (const candidate of candidates) {
     const location = normalizeLocation(candidate, fallbackProvince, fallbackCity);
-    if (!location.city) continue;
+    if (!location.city) {
+      if (location.province) {
+        const key = `${location.province}\u0000`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          provinceOnlyLocations.push(location);
+        }
+      }
+      continue;
+    }
     const key = `${location.province}\u0000${location.city}`;
     if (seen.has(key)) continue;
     seen.add(key);
     locations.push(location);
   }
 
-  if (locations.length > 0) return locations;
+  if (locations.length > 0) {
+    const coveredProvinces = new Set(locations.map((location) => location.province));
+    return [
+      ...locations,
+      ...provinceOnlyLocations.filter((location) => !coveredProvinces.has(location.province)),
+    ];
+  }
+  if (provinceOnlyLocations.length > 0) return provinceOnlyLocations;
   const fallback = normalizeLocation(value, fallbackProvince, fallbackCity);
   return fallback.province || fallback.city ? [fallback] : [{ province: "", city: "" }];
 }
@@ -785,7 +882,7 @@ function normalizeJobAtLocation(job, source, now, location) {
     cleanList([rawJobCategories(raw, source)]).join("|"),
   ].join("|");
   const upstreamId = rawJobId(raw);
-  const idKey = source.type === "community-json" && upstreamId !== undefined
+  const idKey = upstreamId !== undefined
     ? `${text(upstreamId)}|${location.province}|${location.city}`
     : upstreamId;
   const id = stableRecordId(source.id, idKey, fallbackKey);
@@ -824,10 +921,10 @@ export function normalizeJobs(job, sourceInput, nowInput) {
   const locationValue = source.type === "greenhouse"
     ? greenhouseLocation(raw)
     : (source.type === "lever" ? leverLocation(raw) : communityLocation(raw));
-  const locations = source.type === "community-json"
-    ? normalizeLocations(locationValue, source.defaultProvince, source.defaultCity)
-    : [normalizeLocation(locationValue, source.defaultProvince, source.defaultCity)];
+  const locations = normalizeLocations(locationValue, source.defaultProvince, source.defaultCity);
+  if (hasConflictingLocations(locations)) return [];
   return locations
+    .filter(isGuangdongLocation)
     .map((location) => normalizeJobAtLocation(raw, source, now, location))
     .filter(Boolean);
 }
@@ -955,7 +1052,9 @@ function recordCandidateKeys(record) {
     ? record.__dedupeUrl
     : record?.campusUrl;
   const url = canonicalUrl(dedupeUrl);
-  if (url) keys.push(`url:${url}`);
+  if (url) {
+    keys.push(`url:${text(record?.province)}\u0000${text(record?.city)}\u0000${url}`);
+  }
   return keys;
 }
 
@@ -1060,7 +1159,7 @@ function previousRecordForSource(record, source, now) {
     statusUpdatedAt: state.statusUpdatedAt,
     isDemo: record.isDemo === true,
   });
-  if (typeof record.campusUrl === "string" && isHttpsUrl(record.campusUrl)) retained.campusUrl = record.campusUrl.trim();
+  if (typeof record.campusUrl === "string" && isHttpsUrl(record.campusUrl)) retained.campusUrl = safeUrl(record.campusUrl);
   for (const key of ["sourceUpdatedAt", "fetchedAt", "statusUpdatedAt"]) {
     if (typeof record[key] === "string" && !Number.isNaN(Date.parse(record[key]))) retained[key] = record[key];
   }
@@ -1074,7 +1173,8 @@ function previousRecordsBySource(previousPayload, source, now) {
   const records = Array.isArray(previousPayload?.records) ? previousPayload.records : [];
   return records
     .map((record) => previousRecordForSource(record, source, now))
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter(isGuangdongRecord);
 }
 
 function previousSourceById(previousPayload, sourceId) {
@@ -1082,7 +1182,16 @@ function previousSourceById(previousPayload, sourceId) {
   return previousPayload.sources.find((source) => text(source?.id) === sourceId) ?? null;
 }
 
-function sourceOutput(source, status, lastCheckedAt, recordCount, error) {
+function sourceIsStale(status, lastCheckedAt, sourceUpdatedAt) {
+  if (status !== "ok") return true;
+  if (!sourceUpdatedAt) return false;
+  const checkedAt = Date.parse(lastCheckedAt);
+  const updatedAt = Date.parse(sourceUpdatedAt);
+  if (Number.isNaN(checkedAt) || Number.isNaN(updatedAt)) return false;
+  return checkedAt - updatedAt > SOURCE_STALE_AFTER_DAYS * 86_400_000;
+}
+
+function sourceOutput(source, status, lastCheckedAt, recordCount, error, sourceUpdatedAt = "", stale = false) {
   const result = {
     id: source.id,
     name: source.name,
@@ -1091,6 +1200,9 @@ function sourceOutput(source, status, lastCheckedAt, recordCount, error) {
     lastCheckedAt: text(lastCheckedAt),
     recordCount: Number.isInteger(recordCount) && recordCount >= 0 ? recordCount : 0,
   };
+  const normalizedSourceUpdatedAt = normalizeTimestamp(sourceUpdatedAt);
+  if (normalizedSourceUpdatedAt) result.sourceUpdatedAt = normalizedSourceUpdatedAt;
+  if (stale || sourceIsStale(status, lastCheckedAt, normalizedSourceUpdatedAt)) result.stale = true;
   if (error) result.error = normalizeResponseError(error);
   return result;
 }
@@ -1129,25 +1241,35 @@ export async function syncJobs(optionsOrSources = {}, maybeOptions = {}) {
         fetchImpl,
         timeoutMs: options.timeoutMs ?? source.timeoutMs ?? defaultTimeoutMs,
       });
+      if (jobs.length === 0 && !source.allowEmpty) {
+        throw new Error("来源返回空岗位列表");
+      }
+      const latestSourceUpdatedAt = jobs
+        .map((job) => sourceUpdatedAt(job))
+        .filter(Boolean)
+        .sort()
+        .at(-1) || "";
       for (const job of jobs) {
         for (const record of normalizeJobs(job, source, now)) {
           candidates.push({ record: carryPreviousState(record, previousRecords, now), priority: 2 });
         }
       }
-      sourceStates.push({ source, status: "ok", lastCheckedAt: now });
+      sourceStates.push({ source, status: "ok", lastCheckedAt: now, sourceUpdatedAt: latestSourceUpdatedAt });
     } catch (error) {
       for (const record of previousRecords) candidates.push({ record, priority: 1 });
       sourceStates.push({ source, status: "error", lastCheckedAt: now, error: normalizeResponseError(error) });
     }
   }
 
-  const records = deduplicateCandidates(candidates);
-  const sourcesOutput = sourceStates.map(({ source, status, lastCheckedAt, error }) => sourceOutput(
+  const records = filterGuangdongRecords(deduplicateCandidates(candidates));
+  const sourcesOutput = sourceStates.map(({ source, status, lastCheckedAt, error, sourceUpdatedAt }) => sourceOutput(
     source,
     status,
     lastCheckedAt,
     records.filter((record) => record.sourceId === source.id).length,
     error,
+    sourceUpdatedAt,
+    status !== "ok",
   ));
 
   return {
@@ -1168,6 +1290,8 @@ function comparablePayload(payload) {
       status: source?.status,
       lastCheckedAt: "",
       recordCount: source?.recordCount,
+      sourceUpdatedAt: source?.sourceUpdatedAt,
+      stale: source?.stale,
       error: source?.error,
     })),
     records: (Array.isArray(payload?.records) ? payload.records : []).map((record) => ({

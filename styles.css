@@ -1059,6 +1059,7 @@ h1 span {
 
 .category-list {
   display: flex;
+  min-width: 0;
   max-width: 230px;
   flex-wrap: wrap;
   gap: 4px;
@@ -1066,6 +1067,8 @@ h1 span {
 
 .category-tag {
   display: inline-block;
+  min-width: 0;
+  max-width: 100%;
   padding: 3px 6px;
   border: 1px solid #e2e7e1;
   border-radius: 5px;
@@ -1073,7 +1076,8 @@ h1 span {
   color: var(--ink-muted);
   font-size: 10px;
   line-height: 1.35;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .location-cell {
@@ -1354,6 +1358,7 @@ h1 span {
 
 .job-card-field {
   display: grid;
+  min-width: 0;
   gap: 3px;
 }
 
@@ -1569,6 +1574,11 @@ h1 span {
   padding: 5px 8px;
   background: var(--forest-light);
   color: var(--forest);
+}
+
+.provenance-health.is-stale {
+  color: #9a5b24;
+  font-weight: 700;
 }
 
 .city-discovery {

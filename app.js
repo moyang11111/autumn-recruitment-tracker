@@ -19,16 +19,30 @@
     && typeof root.RECRUITMENT_DOMESTIC_LOCATIONS === "object"
     ? root.RECRUITMENT_DOMESTIC_LOCATIONS
     : {};
+  const focusRegion = root.RECRUITMENT_FOCUS_REGION
+    && typeof root.RECRUITMENT_FOCUS_REGION === "object"
+    ? root.RECRUITMENT_FOCUS_REGION
+    : {};
+  const focusProvince = typeof focusRegion.province === "string" && focusRegion.province.trim()
+    ? focusRegion.province.trim()
+    : "广东";
+  const focusCities = Array.isArray(focusRegion.cities) && focusRegion.cities.length > 0
+    ? focusRegion.cities.filter((city) => typeof city === "string" && city.trim()).map((city) => city.trim())
+    : (Array.isArray(domesticLocationSource[focusProvince]) ? domesticLocationSource[focusProvince] : []);
+  const focusCitySet = new Set(focusCities);
   const storageKey = typeof dataMeta.storageKey === "string" && dataMeta.storageKey.trim()
     ? dataMeta.storageKey
     : "autumn-recruitment-tracker:v1";
   const DEFAULT_STATUS = statusOptions[0] || "未投递";
   const DEFAULT_STATUS_UPDATED_AT = "1970-01-01T00:00:00.000Z";
   const STORAGE_SCHEMA_VERSION = 2;
+  const MIN_RECRUITMENT_YEAR = 1900;
+  const MAX_RECRUITMENT_YEAR = 9999;
   const EXAMPLE_SOURCE_NAME = "内置示例";
   const DEFAULT_SYNC_SOURCE_NAME = "自动同步源";
   const MAX_RENDERED_RECORDS = 80;
   const LATEST_SNAPSHOT_URL = "data/jobs.generated.json";
+  const TRACKING_QUERY_PARAMETER_PATTERN = /^(?:utm_|gh_src$|source$)/i;
 
   const STATUS_CLASS_NAMES = Object.freeze({
     未投递: "status-not-applied",
@@ -60,7 +74,7 @@
     filters: {
       keyword: "",
       nature: "",
-      province: "",
+      province: focusProvince,
       city: "",
       deadline: "",
       status: "",
@@ -69,7 +83,7 @@
     storageAvailable: false,
     currentRecordIds: new Set(),
     cityDraft: {
-      province: "",
+      province: focusProvince,
       city: "",
     },
     cityRequest: {
@@ -91,9 +105,11 @@
     const sourceCategories = Array.isArray(record?.categories)
       ? record.categories
       : (Array.isArray(record?.jobCategories) ? record.jobCategories : []);
+    const safeUrl = safeCampusUrl(record?.campusUrl);
     return {
       ...record,
       categories: [...sourceCategories],
+      campusUrl: safeUrl || record?.campusUrl || "",
     };
   }
 
@@ -114,6 +130,8 @@
 
   function isDateOnly(value) {
     if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const year = Number(value.slice(0, 4));
+    if (year < MIN_RECRUITMENT_YEAR || year > MAX_RECRUITMENT_YEAR) return false;
     const date = new Date(`${value}T00:00:00Z`);
     return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
   }
@@ -136,26 +154,54 @@
   }
 
   function isHttpsUrl(value) {
-    if (typeof value !== "string" || !value.trim()) return false;
+    const decoded = decodeHtmlEntities(value);
+    if (typeof decoded !== "string" || !decoded.trim()) return false;
+    if (/[\u0000-\u001f\u007f]/.test(decoded)) return false;
     try {
-      const url = new URL(value);
-      return url.protocol === "https:" && Boolean(url.hostname);
+      const url = new URL(decoded.trim());
+      return url.protocol === "https:"
+        && Boolean(url.hostname)
+        && !url.username
+        && !url.password;
     } catch {
       return false;
     }
   }
 
   function safeCampusUrl(value) {
-    if (!isHttpsUrl(value)) return "";
+    const decoded = decodeHtmlEntities(value);
+    if (!isHttpsUrl(decoded)) return "";
     try {
-      return new URL(value).href;
+      return new URL(decoded.trim()).href;
     } catch {
       return "";
     }
   }
 
+  function decodeHtmlEntities(value) {
+    return typeof value === "string" ? value.replace(/&amp;/gi, "&") : value;
+  }
+
+  function isCommunityFallbackUrl(record) {
+    if (record?.sourceType !== "community-json") return false;
+    const campusUrl = safeCampusUrl(record.campusUrl);
+    if (!campusUrl) return false;
+    try {
+      const url = new URL(campusUrl);
+      const hostname = url.hostname.toLowerCase();
+      const pathSegments = url.pathname.split("/").filter(Boolean);
+      return (hostname === "github.com" || hostname === "www.github.com")
+        && pathSegments.length === 2;
+    } catch {
+      return false;
+    }
+  }
+
   function communityProgressKey(record) {
     if (record?.sourceType !== "community-json") return "";
+    // A generic GitHub repository is only a source-level fallback URL. Keep
+    // these records isolated by their stable job ID instead of the shared URL.
+    if (isCommunityFallbackUrl(record)) return "";
     const campusUrl = safeCampusUrl(record.campusUrl);
     if (!campusUrl) return "";
     return [
@@ -167,12 +213,53 @@
     ].join("\u0000");
   }
 
+  function recordJobUrlKey(record) {
+    if (!record || isCommunityFallbackUrl(record)) return "";
+    const campusUrl = safeCampusUrl(record.campusUrl);
+    if (!campusUrl) return "";
+    try {
+      const url = new URL(campusUrl);
+      for (const key of [...url.searchParams.keys()]) {
+        if (TRACKING_QUERY_PARAMETER_PATTERN.test(key)) url.searchParams.delete(key);
+      }
+      const normalizedPath = url.pathname.replace(/\/+$/, "").toLocaleLowerCase();
+      const genericPath = [
+        "",
+        "/career",
+        "/careers",
+        "/campus",
+        "/job",
+        "/jobs",
+        "/posting",
+        "/postings",
+        "/recruit",
+        "/recruitment",
+        "/campus-recruitment",
+      ].includes(normalizedPath);
+      const fragment = url.hash.slice(1).trim();
+      if (genericPath && (!fragment || fragment === "/")) return "";
+      return [
+        record.province || "",
+        record.city || "",
+        url.href,
+      ].join("\u0000");
+    } catch {
+      return "";
+    }
+  }
+
   function recordProgressKeys(record) {
     const keys = [];
     if (typeof record?.id === "string" && record.id.trim()) keys.push(`id:${record.id}`);
     const stableKey = communityProgressKey(record);
     if (stableKey) keys.push(`community:${stableKey}`);
+    const jobUrlKey = recordJobUrlKey(record);
+    if (jobUrlKey) keys.push(`url:${jobUrlKey}`);
     return keys;
+  }
+
+  function hasMeaningfulProgress(record) {
+    return Boolean(progressEntryForRecord(record));
   }
 
   function isValidStoredRecord(record) {
@@ -231,7 +318,7 @@
       province: record.province,
       city: record.city,
       categories: [...categories],
-      campusUrl: record.campusUrl,
+      campusUrl: safeCampusUrl(record.campusUrl),
       sourceId: record.sourceId || "",
       sourceName: record.sourceName || "",
       sourceType: record.sourceType || "",
@@ -294,19 +381,17 @@
     }
   }
 
-  function serializeStoredState(records, currentIds = state.currentRecordIds) {
+  function serializeStoredState(records, _currentIds = state.currentRecordIds) {
     const safeRecords = Array.isArray(records) ? records.filter(isValidStoredRecord) : [];
-    const normalizedCurrentIds = currentIds instanceof Set
-      ? currentIds
-      : new Set(Array.isArray(currentIds) ? currentIds.filter((id) => typeof id === "string") : []);
-    const effectiveCurrentIds = normalizedCurrentIds.size > 0 || safeRecords.length === 0
-      ? normalizedCurrentIds
-      : new Set(safeRecords.map((record) => record.id));
+    // Keep compact details for every non-default record with user progress so
+    // a later snapshot can restore a retired job after its current ID vanishes.
+    // The currentIds argument remains accepted for compatibility with callers
+    // from the pre-history format, but default records are still omitted.
     return {
       schemaVersion: STORAGE_SCHEMA_VERSION,
       progress: safeRecords.map(progressEntryForRecord).filter(Boolean),
       history: safeRecords
-        .filter((record) => !effectiveCurrentIds.has(record.id) && record.status !== DEFAULT_STATUS)
+        .filter((record) => record.status !== DEFAULT_STATUS)
         .map(compactHistoryRecord),
     };
   }
@@ -360,8 +445,19 @@
     const nestedMeta = payload && typeof payload === "object" && payload.meta && typeof payload.meta === "object"
       ? payload.meta
       : {};
-    const sourceList = Array.isArray(payload?.sources)
+    const sourceEntries = Array.isArray(payload?.sources)
       ? payload.sources
+        .filter((source) => source && typeof source === "object")
+        .map((source) => ({
+          id: pickFirstString(source.id),
+          name: pickFirstString(source.name, source.sourceName, source.id),
+          status: pickFirstString(source.status) || "unknown",
+          recordCount: Number.isInteger(source.recordCount) && source.recordCount >= 0 ? source.recordCount : 0,
+          stale: source.stale === true,
+        }))
+      : [];
+    const sourceList = sourceEntries.length > 0
+      ? sourceEntries
         .map((source) => pickFirstString(source?.name, source?.sourceName, source?.id))
         .filter(Boolean)
         .join("、")
@@ -398,6 +494,8 @@
     return {
       sourceName,
       lastSyncAt: isValidTimestamp(lastSyncAt) ? lastSyncAt : "",
+      sourceCount: sourceEntries.length,
+      sourceEntries,
     };
   }
 
@@ -428,6 +526,17 @@
       // A generated script may expose the payload only through globalThis.
     }
     return root.RECRUITMENT_SYNC_PAYLOAD;
+  }
+
+  function isFocusRecord(record) {
+    if (!record || typeof record !== "object") return false;
+    if (record.province !== focusProvince) return false;
+    const city = typeof record.city === "string" ? record.city.trim() : "";
+    return city === "" || focusCitySet.has(city);
+  }
+
+  function focusRecords(records) {
+    return (Array.isArray(records) ? records : []).filter(isFocusRecord);
   }
 
   function normalizeFeedRecord(record, sourceKind, sourceName, lastSyncAt) {
@@ -467,6 +576,7 @@
       city,
       categories,
       campusUrl,
+      sourceType: pickFirstString(record.sourceType) || (sourceKind === "example" ? "demo" : ""),
       isDemo: sourceKind === "example",
       sourceKind,
       sourceName: pickFirstString(record.sourceName, record.source, sourceName) || sourceName,
@@ -481,6 +591,7 @@
     return initialRecords
       .map((record) => normalizeFeedRecord(record, "example", EXAMPLE_SOURCE_NAME, ""))
       .filter(Boolean)
+      .filter(isFocusRecord)
       .map((record) => ({
         ...record,
         status: statusOptions.includes(record.status) ? record.status : DEFAULT_STATUS,
@@ -490,34 +601,136 @@
       }));
   }
 
+  function recordMergeKeys(record) {
+    // URL keys are intentionally excluded here. A current snapshot can expose
+    // several valid jobs through one shared landing page; only exact IDs may
+    // merge current records. URL keys remain available to history migration
+    // and the explicit example-to-sync reconciliation below.
+    const keys = [];
+    if (typeof record?.id === "string" && record.id.trim()) keys.push(`id:${record.id}`);
+    return keys;
+  }
+
+  function uniqueUrlOwners(candidates) {
+    const owners = new Map();
+    const duplicates = new Set();
+    candidates.forEach((candidate) => {
+      const jobUrlKey = recordJobUrlKey(candidate.record);
+      if (!jobUrlKey) return;
+      const key = `url:${jobUrlKey}`;
+      if (duplicates.has(key)) return;
+      if (owners.has(key)) {
+        owners.delete(key);
+        duplicates.add(key);
+        return;
+      }
+      owners.set(key, candidate);
+    });
+    return owners;
+  }
+
+  function compareStatusCandidates(left, right) {
+    if ((left.priority ?? 0) !== (right.priority ?? 0)) {
+      return (right.priority ?? 0) - (left.priority ?? 0);
+    }
+    const leftUpdatedAt = Date.parse(left.record?.statusUpdatedAt || "");
+    const rightUpdatedAt = Date.parse(right.record?.statusUpdatedAt || "");
+    if (leftUpdatedAt !== rightUpdatedAt) return rightUpdatedAt - leftUpdatedAt;
+    return (left.index ?? 0) - (right.index ?? 0);
+  }
+
   function mergeRecruitmentRecords(exampleRecords, syncRecords) {
-    const byId = new Map();
-    exampleRecords.forEach((record) => {
-      if (record?.id) byId.set(record.id, cloneRecord(record));
+    const candidates = [
+      ...(Array.isArray(exampleRecords) ? exampleRecords.filter(isFocusRecord) : [])
+        .map((record, index) => ({ record, priority: 0, index })),
+      ...(Array.isArray(syncRecords) ? syncRecords.filter(isFocusRecord) : [])
+        .map((record, index) => ({ record, priority: 1, index: (exampleRecords?.length || 0) + index })),
+    ]
+      .filter(({ record }) => typeof record?.id === "string" && record.id.trim())
+      .map((candidate, position) => ({ ...candidate, position }));
+    const parent = candidates.map((_, index) => index);
+    const find = (index) => {
+      let rootIndex = index;
+      while (parent[rootIndex] !== rootIndex) rootIndex = parent[rootIndex];
+      while (parent[index] !== index) {
+        const next = parent[index];
+        parent[index] = rootIndex;
+        index = next;
+      }
+      return rootIndex;
+    };
+    const union = (left, right) => {
+      const leftRoot = find(left);
+      const rightRoot = find(right);
+      if (leftRoot !== rightRoot) parent[rightRoot] = leftRoot;
+    };
+    const keyOwners = new Map();
+    candidates.forEach((candidate, index) => {
+      recordMergeKeys(candidate.record).forEach((key) => {
+        if (keyOwners.has(key)) union(index, keyOwners.get(key));
+        else keyOwners.set(key, index);
+      });
     });
-    syncRecords.forEach((record) => {
-      if (!record?.id) return;
-      const previous = byId.get(record.id);
-      const mergedStatus = statusOptions.includes(record.status)
-        ? record.status
-        : (previous?.status || DEFAULT_STATUS);
-      const merged = {
-        ...(previous || {}),
-        ...cloneRecord(record),
-        isDemo: false,
-        sourceKind: "sync",
-        sourceName: record.sourceName || DEFAULT_SYNC_SOURCE_NAME,
-        lastSyncAt: record.lastSyncAt || "",
-        status: mergedStatus,
-        statusUpdatedAt: mergedStatus === DEFAULT_STATUS
-          ? DEFAULT_STATUS_UPDATED_AT
-          : (isValidTimestamp(record.statusUpdatedAt)
-          ? record.statusUpdatedAt
-          : (previous?.statusUpdatedAt || DEFAULT_STATUS_UPDATED_AT)),
-      };
-      byId.set(record.id, merged);
+    const exampleUrlOwners = uniqueUrlOwners(candidates.filter((candidate) => candidate.priority === 0));
+    const syncUrlOwners = uniqueUrlOwners(candidates.filter((candidate) => candidate.priority > 0));
+    exampleUrlOwners.forEach((candidate, key) => {
+      const syncCandidate = syncUrlOwners.get(key);
+      if (syncCandidate) union(candidate.position, syncCandidate.position);
     });
-    return [...byId.values()];
+    const groups = new Map();
+    candidates.forEach((candidate, index) => {
+      const rootIndex = find(index);
+      if (!groups.has(rootIndex)) groups.set(rootIndex, []);
+      groups.get(rootIndex).push(candidate);
+    });
+    return [...groups.values()]
+      .sort((left, right) => Math.min(...left.map((candidate) => candidate.index))
+        - Math.min(...right.map((candidate) => candidate.index)))
+      .map((group) => {
+        const primary = [...group].sort((left, right) => (
+          (right.priority - left.priority) || (left.index - right.index)
+        ))[0];
+        const base = primary.priority > 0
+          ? {
+            ...cloneRecord(primary.record),
+            isDemo: false,
+            sourceKind: "sync",
+            sourceName: pickFirstString(primary.record.sourceName) || DEFAULT_SYNC_SOURCE_NAME,
+            lastSyncAt: pickFirstString(primary.record.lastSyncAt),
+          }
+          : cloneRecord(primary.record);
+        const statusCandidate = group
+          .filter(({ record }) => hasMeaningfulProgress(record))
+          .sort(compareStatusCandidates)[0];
+        const status = statusCandidate?.record?.status || DEFAULT_STATUS;
+        return {
+          ...base,
+          status,
+          statusUpdatedAt: statusCandidate?.record?.statusUpdatedAt || DEFAULT_STATUS_UPDATED_AT,
+        };
+      });
+  }
+
+  function deduplicateByMergeKeys(records) {
+    const result = [];
+    const keyOwners = new Map();
+    (Array.isArray(records) ? records : []).forEach((record) => {
+      const existingIndex = recordMergeKeys(record)
+        .map((key) => keyOwners.get(key))
+        .find((index) => Number.isInteger(index));
+      if (Number.isInteger(existingIndex)) {
+        const existing = result[existingIndex];
+        if (!hasMeaningfulProgress(existing) && hasMeaningfulProgress(record)) {
+          result[existingIndex] = record;
+          recordMergeKeys(record).forEach((key) => keyOwners.set(key, existingIndex));
+        }
+        return;
+      }
+      const index = result.length;
+      result.push(record);
+      recordMergeKeys(record).forEach((key) => keyOwners.set(key, index));
+    });
+    return result;
   }
 
   function resolveRecruitmentData(...args) {
@@ -533,6 +746,8 @@
           label: "示例数据",
           sourceName: EXAMPLE_SOURCE_NAME,
           lastSyncAt: "",
+          sourceCount: 0,
+          sourceEntries: [],
         },
       };
     }
@@ -543,7 +758,7 @@
       "sync",
       syncMeta.sourceName,
       syncMeta.lastSyncAt,
-    )).filter(Boolean);
+    )).filter((record) => record && isFocusRecord(record));
     if (syncRecords.length === 0) {
       return {
         records: exampleRecords,
@@ -553,6 +768,8 @@
           label: "示例数据",
           sourceName: EXAMPLE_SOURCE_NAME,
           lastSyncAt: "",
+          sourceCount: 0,
+          sourceEntries: [],
         },
       };
     }
@@ -568,9 +785,11 @@
       syncRecords: dedupedSyncRecords,
       info: {
         mode: "sync",
-        label: "自动同步 + 示例数据",
+        label: "自动同步数据",
         sourceName: syncMeta.sourceName,
         lastSyncAt: inferredLastSyncAt,
+        sourceCount: syncMeta.sourceCount,
+        sourceEntries: syncMeta.sourceEntries,
       },
     };
   }
@@ -582,32 +801,62 @@
     if (!parsedState || typeof parsedState !== "object") return records;
 
     const progressById = new Map();
+    const progressByKey = new Map();
+    const addProgressKey = (key, entry) => {
+      if (!key || !entry) return;
+      if (!progressByKey.has(key)) progressByKey.set(key, new Map());
+      progressByKey.get(key).set(entry.id, entry);
+    };
     const addProgressEntry = (entry) => {
       if (!isValidStoredProgress(entry)) return;
       progressById.set(`id:${entry.id}`, entry);
       if (typeof entry.recordKey === "string" && entry.recordKey.trim()) {
-        const stableKey = `community:${entry.recordKey.trim()}`;
-        if (!progressById.has(stableKey)) progressById.set(stableKey, entry);
+        addProgressKey(`community:${entry.recordKey.trim()}`, entry);
       }
     };
     (Array.isArray(parsedState.progress) ? parsedState.progress : [])
       .forEach(addProgressEntry);
     const historicalRecords = (Array.isArray(parsedState.history) ? parsedState.history : [])
       .filter(isValidStoredRecord)
+      .filter(isFocusRecord)
       .map(cloneRecord);
     historicalRecords.forEach((record) => {
       const progress = progressEntryForRecord(record);
       if (progress) {
         if (!progressById.has(`id:${progress.id}`)) addProgressEntry(progress);
-        const stableKey = recordProgressKeys(record).find((key) => key.startsWith("community:"));
-        if (stableKey && !progressById.has(stableKey)) progressById.set(stableKey, progress);
+        recordProgressKeys(record).forEach((key) => {
+          if (!key.startsWith("id:")) addProgressKey(key, progress);
+        });
       }
     });
     const currentIds = new Set(records.map((record) => record.id));
+    const currentProgressKeyCounts = new Map();
+    records.forEach((record) => {
+      recordProgressKeys(record)
+        .filter((key) => !key.startsWith("id:"))
+        .forEach((key) => currentProgressKeyCounts.set(key, (currentProgressKeyCounts.get(key) || 0) + 1));
+    });
+    const uniqueCurrentProgressKeys = new Set(
+      [...currentProgressKeyCounts.entries()]
+        .filter(([, count]) => count === 1)
+        .map(([key]) => key),
+    );
+    const uniqueProgressForKey = (key) => {
+      if (!uniqueCurrentProgressKeys.has(key)) return null;
+      const candidates = progressByKey.get(key);
+      if (!candidates || candidates.size !== 1) return null;
+      return candidates.values().next().value;
+    };
+    const storedProgressForRecord = (record) => {
+      const byId = progressById.get(`id:${record.id}`);
+      if (byId) return byId;
+      return recordProgressKeys(record)
+        .filter((key) => !key.startsWith("id:"))
+        .map(uniqueProgressForKey)
+        .find(Boolean) || null;
+    };
     const mergedRecords = records.map((record) => {
-      const stored = recordProgressKeys(record)
-        .map((key) => progressById.get(key))
-        .find(Boolean);
+      const stored = storedProgressForRecord(record);
       if (!stored || !statusOptions.includes(stored.status) || !isValidTimestamp(stored.statusUpdatedAt)) {
         return record;
       }
@@ -620,18 +869,22 @@
     });
     const retainedHistory = historicalRecords
       .map((record) => {
-        const stored = recordProgressKeys(record)
-          .map((key) => progressById.get(key))
-          .find(Boolean);
-        if (!stored || stored.status === DEFAULT_STATUS || !isValidTimestamp(stored.statusUpdatedAt)) return record;
+        const stored = storedProgressForRecord(record);
+        if (!stored || !statusOptions.includes(stored.status) || !isValidTimestamp(stored.statusUpdatedAt)) return record;
         return {
           ...record,
           status: stored.status,
           statusUpdatedAt: stored.statusUpdatedAt,
         };
       })
-      .filter((record) => !currentIds.has(record.id) && record.status !== DEFAULT_STATUS);
-    return [...mergedRecords, ...retainedHistory];
+      .filter((record) => (
+        !currentIds.has(record.id)
+        && !recordProgressKeys(record)
+          .filter((key) => !key.startsWith("id:"))
+          .some((key) => Boolean(uniqueProgressForKey(key)))
+        && record.status !== DEFAULT_STATUS
+      ));
+    return deduplicateByMergeKeys([...mergedRecords, ...retainedHistory]);
   }
 
   function loadRecords() {
@@ -672,6 +925,8 @@
       "校招官网",
       "投递状态",
       "状态更新时间",
+      "sourceType",
+      "isDemo",
     ];
     const rows = records.map((record) => [
       record.companyName,
@@ -684,6 +939,8 @@
       record.campusUrl,
       record.status,
       record.statusUpdatedAt,
+      record.sourceType || (isExampleRecord(record) ? "demo" : ""),
+      record.isDemo === true,
     ]);
     return `\uFEFF${[header, ...rows].map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
   }
@@ -915,6 +1172,7 @@
   }
 
   function isExampleRecord(record) {
+    if (record?.sourceKind === "sync") return false;
     return record?.sourceKind === "example" || record?.isDemo === true;
   }
 
@@ -1004,7 +1262,9 @@
   }
 
   function filterRecords(records, filters = state.filters) {
-    return records.filter((record) => recordMatchesFilters(record, filters));
+    return (Array.isArray(records) ? records : [])
+      .filter(isFocusRecord)
+      .filter((record) => recordMatchesFilters(record, filters));
   }
 
   function calculateStats(records = state.records) {
@@ -1044,7 +1304,9 @@
     });
     (Array.isArray(records) ? records : []).forEach((record) => {
       if (!record || !locationMap.has(record.province) || typeof record.city !== "string" || !record.city.trim()) return;
-      locationMap.get(record.province).add(record.city.trim());
+      const city = record.city.trim();
+      if (!focusCitySet.has(city)) return;
+      locationMap.get(record.province).add(city);
     });
     return [...locationMap.entries()].map(([province, cities]) => ({
       province,
@@ -1063,7 +1325,7 @@
     state.cityDraft.province = selectedProvince;
     state.cityDraft.city = selectedCity;
     setSelectOptions(dom.provinceFilter, provinces, "请选择省份");
-    setSelectOptions(dom.cityFilter, cities, "请选择城市");
+    setSelectOptions(dom.cityFilter, cities, `${focusProvince}全省（含地点未细分）`);
     dom.provinceFilter.value = selectedProvince;
     dom.cityFilter.value = selectedCity;
     dom.cityFilter.disabled = !selectedProvince || cities.length === 0 || state.cityRequest.loading;
@@ -1126,8 +1388,10 @@
   }
 
   function renderLocation(record) {
-    const city = typeof record.city === "string" && record.city.trim() ? record.city : "城市待定";
-    const province = typeof record.province === "string" && record.province.trim() ? record.province : "地区待定";
+    const hasCity = typeof record.city === "string" && Boolean(record.city.trim());
+    const city = hasCity ? record.city : "地点未细分";
+    const provinceName = typeof record.province === "string" && record.province.trim() ? record.province : "地区待定";
+    const province = hasCity ? provinceName : `${provinceName} · 全省`;
     return `<div class="location-cell"><strong>${escapeHtml(city)}</strong><span>${escapeHtml(province)}</span></div>`;
   }
 
@@ -1192,7 +1456,7 @@
     if (dom.cityFetchButton) {
       dom.cityFetchButton.disabled = state.cityRequest.loading || !hasCity;
       dom.cityFetchButton.classList.toggle("is-loading", state.cityRequest.loading);
-      dom.cityFetchButton.textContent = state.cityRequest.loading ? "正在获取…" : "获取该城市秋招";
+      dom.cityFetchButton.textContent = state.cityRequest.loading ? "正在获取…" : "获取该城市信息";
     }
     if (!dom.cityFetchStatus) return;
     if (state.cityRequest.loading) {
@@ -1202,7 +1466,7 @@
     } else if (state.cityRequest.hasRequested) {
       dom.cityFetchStatus.textContent = `已列出 ${state.filters.city} 的 ${state.cityRequest.lastResultCount} 条岗位；投递前请进入官网核验。`;
     } else {
-      dom.cityFetchStatus.textContent = "请选择国内省份和城市，再点击获取信息。";
+      dom.cityFetchStatus.textContent = "请选择广东城市，再点击获取信息；不细分城市时可查看广东全省。";
     }
   }
 
@@ -1235,7 +1499,7 @@
     const validLocation = availableDomesticLocations().some((item) => (
       item.province === normalizedProvince && item.cities.includes(normalizedCity)
     ));
-    if (!validLocation) throw new Error("请先选择有效的国内省份和城市");
+    if (!validLocation) throw new Error("请先选择有效的广东城市");
 
     state.cityDraft.province = normalizedProvince;
     state.cityDraft.city = normalizedCity;
@@ -1274,8 +1538,9 @@
   }
 
   function calculateDiscoverySummary(records = state.records) {
-    const sources = new Set(records.map((record) => sourceNameForRecord(record)).filter(Boolean));
-    const recordSyncTime = records
+    const syncRecords = focusRecords(records).filter((record) => !isExampleRecord(record));
+    const sources = new Set(syncRecords.map((record) => sourceNameForRecord(record)).filter(Boolean));
+    const recordSyncTime = syncRecords
       .map((record) => record?.lastSyncAt)
       .find((value) => isValidTimestamp(value));
     return {
@@ -1287,28 +1552,87 @@
     };
   }
 
+  function calculateSnapshotSummary(records = state.records) {
+    const focusedRecords = focusRecords(records);
+    const syncRecords = focusedRecords.filter((record) => !isExampleRecord(record));
+    const exampleRecords = focusedRecords.filter(isExampleRecord);
+    const sourceEntries = Array.isArray(state.dataInfo.sourceEntries) ? state.dataInfo.sourceEntries : [];
+    const sourceNames = new Set(syncRecords.map((record) => sourceNameForRecord(record)).filter(Boolean));
+    const sourceCount = sourceEntries.length || sourceNames.size;
+    const healthySourceCount = sourceEntries.filter((source) => source.status === "ok" && !source.stale).length;
+    const staleSourceCount = sourceEntries.filter((source) => source.status !== "ok" || source.stale).length;
+    return {
+      jobCount: focusedRecords.length,
+      companyCount: new Set(focusedRecords.map((record) => record.companyName).filter(Boolean)).size,
+      syncJobCount: syncRecords.length,
+      syncCompanyCount: new Set(syncRecords.map((record) => record.companyName).filter(Boolean)).size,
+      exampleJobCount: exampleRecords.length,
+      exampleCompanyCount: new Set(exampleRecords.map((record) => record.companyName).filter(Boolean)).size,
+      sourceCount,
+      healthySourceCount: sourceEntries.length > 0 ? healthySourceCount : sourceNames.size,
+      staleSourceCount,
+    };
+  }
+
+  function getDataProvenanceText() {
+    const summary = calculateSnapshotSummary();
+    const isSync = state.dataInfo.mode === "sync";
+    return {
+      kind: isSync ? "自动同步数据" : "示例数据",
+      source: isSync
+        ? `同步来源：${state.dataInfo.sourceName || DEFAULT_SYNC_SOURCE_NAME}；示例数据另计 ${summary.exampleJobCount} 条`
+        : `来源：${EXAMPLE_SOURCE_NAME}`,
+      jobs: `同步岗位：${summary.syncJobCount} · 示例岗位：${summary.exampleJobCount}`,
+      companies: `同步企业：${summary.syncCompanyCount} · 示例企业：${summary.exampleCompanyCount}`,
+      sources: `同步来源：${summary.sourceCount}`,
+      health: isSync
+        ? `同步来源健康：${summary.healthySourceCount}/${summary.sourceCount} 正常`
+        : "同步来源健康：无（当前仅示例数据）",
+      lastSync: isSync
+        ? (state.dataInfo.lastSyncAt
+          ? `同步时间：${formatSyncTime(state.dataInfo.lastSyncAt)}（仅同步记录）`
+          : "同步时间：暂无（同步快照未提供时间）")
+        : "同步时间：暂无（当前仅示例数据）",
+    };
+  }
+
+  function getDataNoteText() {
+    if (state.dataInfo.mode === "sync") {
+      const summary = calculateSnapshotSummary();
+      const staleNote = summary.staleSourceCount > 0
+        ? `有 ${summary.staleSourceCount} 个来源异常或数据过旧，已标记为 stale；来源失败时会保留上一份广东快照。`
+        : "当前来源均读取成功。";
+      return `已加载 ${summary.syncJobCount} 条自动同步岗位、${summary.syncCompanyCount} 家企业；另有 ${summary.exampleJobCount} 条内置示例（不计入同步统计）。${staleNote}空日期显示为待公布，投递前请以企业官方页面为准。`;
+    }
+    return typeof dataMeta.dateNote === "string" && dataMeta.dateNote.trim()
+      ? dataMeta.dateNote
+      : "开放时间与截止时间为演示日期，请以企业官方页面为准。";
+  }
+
   function updateDataProvenance() {
     if (!hasDocument) return;
-    if (dom.dataSourceKind) dom.dataSourceKind.textContent = state.dataInfo.label || "示例数据";
-    if (dom.dataSourceName) {
-      const suffix = state.dataInfo.mode === "sync" ? "（含内置示例）" : "";
-      dom.dataSourceName.textContent = `来源：${state.dataInfo.sourceName || EXAMPLE_SOURCE_NAME}${suffix}`;
-    }
-    if (dom.dataLastSync) {
-      dom.dataLastSync.textContent = state.dataInfo.lastSyncAt
-        ? `最后同步：${formatSyncTime(state.dataInfo.lastSyncAt)}`
-        : "最后同步：暂无（示例数据）";
+    const summary = calculateSnapshotSummary();
+    const provenance = getDataProvenanceText();
+    if (dom.dataSourceKind) dom.dataSourceKind.textContent = provenance.kind;
+    if (dom.dataSourceName) dom.dataSourceName.textContent = provenance.source;
+    if (dom.dataLastSync) dom.dataLastSync.textContent = provenance.lastSync;
+    if (dom.dataSnapshotJobs) dom.dataSnapshotJobs.textContent = provenance.jobs;
+    if (dom.dataSnapshotCompanies) dom.dataSnapshotCompanies.textContent = provenance.companies;
+    if (dom.dataSnapshotSources) dom.dataSnapshotSources.textContent = provenance.sources;
+    if (dom.dataSourceHealth) {
+      dom.dataSourceHealth.textContent = provenance.health;
+      dom.dataSourceHealth.classList.toggle("is-stale", summary.staleSourceCount > 0);
     }
   }
 
   function updateDiscoverySummary(records) {
     if (!hasDocument) return;
     const summary = calculateDiscoverySummary(records);
-    const location = [summary.province, summary.city].filter(Boolean).join(" · ") || "全部城市";
+    const location = [summary.province, summary.city].filter(Boolean).join(" · ") || `${focusProvince}全省`;
     if (dom.cityDiscoveryContext) {
       dom.cityDiscoveryContext.textContent = state.cityRequest.hasRequested
         ? `${location} · 可叠加其他筛选条件`
-        : "先选择国内城市，再点击获取信息";
+        : `先选择广东城市，再点击获取信息；默认查看${focusProvince}全省`;
     }
     if (dom.cityMatchCount) dom.cityMatchCount.textContent = String(summary.matchCount);
     if (dom.citySourceCount) dom.citySourceCount.textContent = String(summary.sourceCount);
@@ -1332,7 +1656,7 @@
     }
     if (dom.emptyStateDescription) {
       dom.emptyStateDescription.textContent = hasLocationFilter
-        ? "可以恢复全部城市，或保留其他筛选条件继续查找。"
+        ? `可以恢复${focusProvince}全省，或保留其他筛选条件继续查找。`
         : "试试减少筛选条件，或者换一个关键词继续看看。";
     }
     if (dom.emptyRestoreCitiesButton) dom.emptyRestoreCitiesButton.hidden = !hasLocationFilter;
@@ -1393,12 +1717,12 @@
     state.filters = {
       keyword: "",
       nature: "",
-      province: "",
+      province: focusProvince,
       city: "",
       deadline: "",
       status: "",
     };
-    state.cityDraft = { province: "", city: "" };
+    state.cityDraft = { province: focusProvince, city: "" };
     state.cityRequest = {
       loading: false,
       hasRequested: false,
@@ -1407,20 +1731,20 @@
     };
     syncControls();
     renderResults();
-    if (showMessage) showToast("已清除全部筛选条件");
+    if (showMessage) showToast(`已清除其他筛选，保留${focusProvince}范围`);
   }
 
   function restoreAllCities(showMessage = true) {
-    state.filters.province = "";
+    state.filters.province = focusProvince;
     state.filters.city = "";
-    state.cityDraft.province = "";
+    state.cityDraft.province = focusProvince;
     state.cityDraft.city = "";
     state.cityRequest.hasRequested = false;
     state.cityRequest.lastError = "";
     state.cityRequest.lastResultCount = 0;
     syncControls();
     renderResults();
-    if (showMessage) showToast("已恢复全部城市");
+    if (showMessage) showToast(`已恢复${focusProvince}全省`);
   }
 
   function statusViewForControl(control) {
@@ -1526,7 +1850,8 @@
       const firstCategory = Array.isArray(record.categories) && record.categories.length > 0
         ? ` · ${record.categories[0]}`
         : "";
-      option.textContent = `${record.companyName} · ${record.city}${firstCategory}`;
+      const locationLabel = record.city || `${focusProvince}全省 / 地点未细分`;
+      option.textContent = `${record.companyName} · ${locationLabel}${firstCategory}`;
       fragment.appendChild(option);
     });
     dom.statusAssistantJobSelect.replaceChildren(fragment);
@@ -1615,7 +1940,7 @@
 
   function resetToInitialData() {
     const confirmFn = typeof root.confirm === "function" ? root.confirm.bind(root) : () => true;
-    if (!confirmFn("确定恢复示例数据吗？这会覆盖本机保存的投递状态。")) return;
+    if (!confirmFn("确定恢复广东示例数据吗？这会覆盖本机保存的投递状态。")) return;
     removeStoredRecords();
     state.dataInfo = {
       mode: "example",
@@ -1630,7 +1955,7 @@
     clearFilters();
     const persisted = writeRecords(state.records);
     renderAll();
-    showToast(persisted ? "已恢复示例数据" : "示例数据已恢复，但未持久化，请不要刷新页面");
+    showToast(persisted ? "已恢复广东示例数据" : "广东示例数据已恢复，但未持久化，请不要刷新页面");
     return persisted;
   }
 
@@ -1679,6 +2004,10 @@
       dataSourceKind: byId("dataSourceKind"),
       dataSourceName: byId("dataSourceName"),
       dataLastSync: byId("dataLastSync"),
+      dataSnapshotJobs: byId("dataSnapshotJobs"),
+      dataSnapshotCompanies: byId("dataSnapshotCompanies"),
+      dataSnapshotSources: byId("dataSnapshotSources"),
+      dataSourceHealth: byId("dataSourceHealth"),
       filtersForm: byId("filtersForm"),
       keywordInput: byId("keywordInput"),
       natureFilter: byId("natureFilter"),
@@ -1725,13 +2054,7 @@
 
   function updateDataNote() {
     if (!dom.dataNote) return;
-    if (state.dataInfo.mode === "sync") {
-      dom.dataNote.textContent = "已加载自动同步招聘信息；空日期显示为待公布，请以企业官方页面为准。";
-      return;
-    }
-    dom.dataNote.textContent = typeof dataMeta.dateNote === "string" && dataMeta.dateNote.trim()
-      ? dataMeta.dateNote
-      : "开放时间与截止时间为演示日期，请以企业官方页面为准。";
+    dom.dataNote.textContent = getDataNoteText();
   }
 
   function init() {
@@ -1755,13 +2078,18 @@
       return state.dataInfo;
     },
     state,
-    initialRecords,
+    initialRecords: normalizeExampleRecords(),
     statusOptions,
     companyTypeOptions,
+    focusProvince,
+    focusCities: [...focusCities],
     storageKey,
     maxRenderedRecords: MAX_RENDERED_RECORDS,
     calculateStats,
+    calculateSnapshotSummary,
     calculateDiscoverySummary,
+    getDataProvenanceText,
+    getDataNoteText,
     availableDomesticLocations,
     fetchLatestRecruitmentPayload,
     requestCityRecruitment,
@@ -1770,12 +2098,14 @@
     formatSyncTime,
     recordMatchesFilters,
     filterRecords,
+    isFocusRecord,
     sortRecords,
     makeCsv,
     downloadCsv,
     isDateOnly,
     isHttpsUrl,
     safeCampusUrl,
+    isCommunityFallbackUrl,
     isValidStoredRecord,
     serializeStoredState,
     isOptionalDate,
