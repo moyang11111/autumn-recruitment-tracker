@@ -334,6 +334,37 @@
 
           <div class="mobile-card-list" id="mobileCardView" aria-label="秋招企业与投递进度列表"></div>
 
+          <div class="pagination-controls" id="paginationControls" role="navigation" aria-label="岗位列表分页">
+            <span class="pagination-range" id="paginationRange" role="status" aria-live="polite" aria-atomic="true">
+              暂无结果
+            </span>
+            <div class="pagination-actions" role="group" aria-label="翻页控制">
+              <button class="pagination-button" id="firstPageButton" data-pagination-action="first" type="button" aria-label="前往第一页" aria-controls="desktopTableView mobileCardView" aria-disabled="true" disabled>
+                首页
+              </button>
+              <button class="pagination-button" id="previousPageButton" data-pagination-action="previous" type="button" aria-label="前往上一页" aria-controls="desktopTableView mobileCardView" aria-disabled="true" disabled>
+                上一页
+              </button>
+              <span class="pagination-page-status" id="paginationPageStatus" aria-current="page" aria-live="polite" aria-atomic="true">
+                暂无结果
+              </span>
+              <button class="pagination-button" id="nextPageButton" data-pagination-action="next" type="button" aria-label="前往下一页" aria-controls="desktopTableView mobileCardView" aria-disabled="true" disabled>
+                下一页
+              </button>
+              <button class="pagination-button" id="lastPageButton" data-pagination-action="last" type="button" aria-label="前往最后一页" aria-controls="desktopTableView mobileCardView" aria-disabled="true" disabled>
+                末页
+              </button>
+            </div>
+            <label class="pagination-size-control" for="pageSizeSelect">
+              <span>每页显示</span>
+              <select id="pageSizeSelect" aria-label="选择每页显示的岗位数量" aria-controls="desktopTableView mobileCardView">
+                <option value="80">80 条</option>
+                <option value="160">160 条</option>
+                <option value="all">全部</option>
+              </select>
+            </label>
+          </div>
+
           <div class="empty-state" id="emptyState" hidden>
             <div class="empty-illustration" aria-hidden="true">
               <span class="empty-circle"></span>

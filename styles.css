@@ -917,6 +917,86 @@ h1 span {
   box-shadow: var(--shadow-sm);
 }
 
+.pagination-controls {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.pagination-range {
+  color: var(--ink-muted);
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+}
+
+.pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pagination-button {
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--forest);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.pagination-button:hover:not(:disabled) {
+  border-color: var(--forest);
+  background: var(--forest-light);
+}
+
+.pagination-button:disabled {
+  border-color: var(--line);
+  background: #f2f4f0;
+  color: var(--ink-soft);
+  opacity: 0.62;
+}
+
+.pagination-page-status {
+  min-width: 88px;
+  padding: 0 7px;
+  color: var(--forest);
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pagination-size-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pagination-size-control select {
+  min-height: 36px;
+  padding: 0 28px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background-color: #fbfcf9;
+  color: var(--ink);
+  font-size: 12px;
+}
+
 .recruitment-table {
   width: 100%;
   min-width: 1030px;
@@ -1970,6 +2050,14 @@ h1 span {
     width: 100%;
     justify-content: space-between;
   }
+
+  .pagination-controls {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .pagination-range {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 580px) {
@@ -2204,6 +2292,45 @@ h1 span {
     width: 100%;
   }
 
+  .pagination-controls {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 11px;
+    padding: 12px;
+  }
+
+  .pagination-range {
+    text-align: center;
+  }
+
+  .pagination-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .pagination-page-status {
+    order: -1;
+    flex: 0 0 100%;
+    min-height: 24px;
+  }
+
+  .pagination-button {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
+
+  .pagination-size-control {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .pagination-size-control select {
+    flex: 1;
+    max-width: 180px;
+  }
+
   .job-card {
     padding: 14px;
   }
@@ -2266,6 +2393,7 @@ h1 span {
   .city-discovery,
   .status-assistant,
   .results-toolbar,
+  .pagination-controls,
   .site-footer,
   .toast,
   .campus-link svg {
