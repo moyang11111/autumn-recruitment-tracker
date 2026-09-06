@@ -21,7 +21,7 @@ export const VALID_STATUSES = new Set([
 ]);
 
 export const VALID_COMPANY_TYPES = new Set(["央国企", "私企", "外企", "事业单位", "其他"]);
-export const VALID_SOURCE_TYPES = new Set(["greenhouse", "lever", "community-json"]);
+export const VALID_SOURCE_TYPES = new Set(["greenhouse", "lever", "community-json", "community-csv"]);
 
 export const GUANGDONG_PROVINCE = "广东";
 export const GUANGDONG_CITIES = Object.freeze([
@@ -376,6 +376,7 @@ export function normalizeSource(source, index = 0) {
   const endpoint = text(firstValue(raw.endpoint, raw.apiUrl, raw.url));
   const boardToken = text(firstValue(raw.boardToken, raw.token, raw.board));
   const site = text(firstValue(raw.site, raw.company, raw.slug, raw.account));
+  const filePattern = text(firstValue(raw.filePattern, raw.file_pattern));
   const timeoutCandidate = Number(raw.timeoutMs ?? raw.requestTimeoutMs);
 
   return {
@@ -391,6 +392,7 @@ export function normalizeSource(source, index = 0) {
     endpoint,
     boardToken,
     site,
+    filePattern,
     enabled: raw.enabled !== false && raw.active !== false,
     allowEmpty: raw.allowEmpty === true,
     timeoutMs: Number.isFinite(timeoutCandidate) && timeoutCandidate > 0
@@ -431,7 +433,7 @@ function sourceEndpoint(source) {
     return `https://api.lever.co/v0/postings/${encodeURIComponent(source.site)}?mode=json`;
   }
 
-  if (source.type === "community-json") {
+  if (isCommunitySource(source)) {
     throw new Error("社区聚合来源缺少 endpoint");
   }
 
@@ -545,6 +547,10 @@ function communityLocation(job) {
   return firstValue(job?.l, job?.location, job?.city, job?.workLocation, job?.work_location);
 }
 
+function isCommunitySource(source) {
+  return source?.type === "community-json" || source?.type === "community-csv";
+}
+
 function rawJobCategories(job, source) {
   if (source.type === "greenhouse") {
     return [
@@ -567,7 +573,7 @@ function rawJobCategories(job, source) {
     ];
   }
 
-  if (source.type === "community-json") {
+  if (isCommunitySource(source)) {
     return [job?.p, job?.ind, job?.w, ...source.categoryDefaults];
   }
 
@@ -581,7 +587,7 @@ function rawJobUrl(job, source) {
   if (source.type === "lever") {
     return firstValue(job?.hostedUrl, job?.hosted_url, job?.applyUrl, job?.apply_url, job?.url);
   }
-  if (source.type === "community-json") {
+  if (isCommunitySource(source)) {
     return firstValue(job?.u, job?.url, job?.jobUrl, job?.job_url);
   }
   return firstValue(job?.url, job?.jobUrl, job?.job_url);
@@ -842,7 +848,7 @@ function setStateKey(record, value) {
 function communityStateKey(source, record, candidateUrl) {
   const url = canonicalUrl(candidateUrl);
   const sourceUrl = canonicalUrl(source.campusUrl);
-  if (source.type === "community-json" && url && url !== sourceUrl) {
+  if (isCommunitySource(source) && url && url !== sourceUrl) {
     return [
       "community-url",
       source.id,
@@ -906,15 +912,15 @@ function normalizeJobAtLocation(job, source, now, location) {
   const candidateUrl = rawJobUrl(raw, source);
   const title = firstValue(raw.title, raw.text, raw.name, raw.p);
   const rawCompanyName = firstValue(raw.c, raw.companyName, raw.company);
-  if (source.type === "community-json" && (!text(rawCompanyName) || !text(title))) return null;
-  const companyName = source.type === "community-json"
+  if (isCommunitySource(source) && (!text(rawCompanyName) || !text(title))) return null;
+  const companyName = isCommunitySource(source)
     ? text(firstValue(rawCompanyName, source.companyName))
     : source.companyName;
-  const companyType = source.type === "community-json"
+  const companyType = isCommunitySource(source)
     ? communityCompanyType(raw, companyName, source.companyType)
     : source.companyType;
   const meaningfulJob = rawJobId(raw) !== undefined || text(candidateUrl) || text(title)
-    || (source.type !== "community-json" && companyName);
+    || (!isCommunitySource(source) && companyName);
   if (!meaningfulJob) return null;
   const campusUrl = candidateUrl === undefined || candidateUrl === null || text(candidateUrl) === ""
     ? source.campusUrl
@@ -935,7 +941,7 @@ function normalizeJobAtLocation(job, source, now, location) {
     : upstreamId;
   const id = stableRecordId(source.id, idKey, fallbackKey);
   const state = normalizeRecordState(null, now);
-  const deadline = source.type === "community-json"
+  const deadline = isCommunitySource(source)
     ? normalizeDateOnly(firstValue(raw.d, raw.deadline, raw.closeDate))
     : explicitDate(raw, DEADLINE_KEYS, ["deadline", "close date", "closing date", "end date", "application deadline", "截止日期"]);
 
@@ -1071,11 +1077,163 @@ export async function fetchCommunityJobs(sourceInput, options = {}) {
   }));
 }
 
+export async function fetchText(url, {
+  fetchImpl = globalThis.fetch,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+} = {}) {
+  if (!isHttpsUrl(url)) throw new Error("请求 URL 必须使用 HTTPS");
+  if (typeof fetchImpl !== "function") throw new Error("当前 Node 环境没有可用的 fetch");
+
+  const safeTimeout = Number.isFinite(Number(timeoutMs)) && Number(timeoutMs) > 0
+    ? Math.floor(Number(timeoutMs))
+    : DEFAULT_TIMEOUT_MS;
+  const controller = new AbortController();
+  let timeoutTimer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutTimer = setTimeout(() => {
+      controller.abort();
+      reject(new Error(`请求超时（${safeTimeout}ms）`));
+    }, safeTimeout);
+  });
+
+  try {
+    const operation = Promise.resolve()
+      .then(() => fetchImpl(url, {
+        method: "GET",
+        headers: {
+          accept: "text/csv, text/plain;q=0.9, */*;q=0.8",
+          "user-agent": "autumn-recruitment-tracker-sync/1",
+        },
+        redirect: "error",
+        signal: controller.signal,
+      }))
+      .then(async (response) => {
+        if (!response || response.ok === false) {
+          const status = response?.status ? `HTTP ${response.status}` : "HTTP 请求失败";
+          throw new Error(status);
+        }
+        if (typeof response.text !== "function") throw new Error("响应不是文本内容");
+        return response.text();
+      });
+    return await Promise.race([
+      operation,
+      timeoutPromise,
+    ]);
+  } catch (error) {
+    if (error?.name === "AbortError") throw new Error(`请求超时（${safeTimeout}ms）`);
+    throw error;
+  } finally {
+    clearTimeout(timeoutTimer);
+  }
+}
+
+// 轻量 RFC 4180 解析：支持引号字段、双引号转义与 CRLF，不引入第三方依赖。
+function parseCsvTable(input) {
+  const source = String(input ?? "").replace(/^\uFEFF/, "");
+  const rows = [];
+  let row = [];
+  let field = "";
+  let inQuotes = false;
+  const pushRow = () => {
+    row.push(field);
+    field = "";
+    if (row.length > 1 || (row[0] ?? "") !== "") rows.push(row);
+    row = [];
+  };
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    if (inQuotes) {
+      if (character === '"') {
+        if (source[index + 1] === '"') {
+          field += '"';
+          index += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += character;
+      }
+      continue;
+    }
+    if (character === '"') {
+      inQuotes = true;
+    } else if (character === ",") {
+      row.push(field);
+      field = "";
+    } else if (character === "\n" || character === "\r") {
+      if (character === "\r" && source[index + 1] === "\n") index += 1;
+      pushRow();
+    } else {
+      field += character;
+    }
+  }
+  if (field !== "" || row.length > 0) pushRow();
+  return rows;
+}
+
+// recruit-hub 等社区源把带日期后缀的 CSV 放进 data/ 目录；文件名每次发布都会变，
+// 所以先通过 GitHub 目录列表发现最新文件，再下载并转换成 community-json 的
+// 记录形状，让后续城市拆分、广东过滤、去重与 ID 生成全部复用现有管线。
+async function resolveCommunityCsvFile(source, options) {
+  const listing = await fetchJson(source.endpoint, options);
+  if (!Array.isArray(listing)) throw new Error("社区 CSV 目录列表响应不是数组");
+  let pattern = /\.csv$/i;
+  if (source.filePattern) {
+    try {
+      pattern = new RegExp(source.filePattern, "i");
+    } catch {
+      throw new Error(`filePattern 不是合法正则：${source.filePattern}`);
+    }
+  }
+  const files = listing
+    .filter((entry) => entry && entry.type === "file" && pattern.test(text(entry.name)))
+    .sort((left, right) => text(right.name).localeCompare(text(left.name)));
+  if (files.length === 0) throw new Error("社区 CSV 目录中没有匹配的数据文件");
+  return files[0];
+}
+
+export async function fetchCommunityCsvJobs(sourceInput, options = {}) {
+  const source = sourceInput?.raw ? sourceInput : normalizeSource(sourceInput);
+  const file = await resolveCommunityCsvFile(source, options);
+  const csv = await fetchText(file.download_url, {
+    ...options,
+    timeoutMs: options.timeoutMs ?? source.timeoutMs,
+  });
+  const rows = parseCsvTable(csv);
+  if (rows.length < 2) throw new Error("社区 CSV 缺少数据行");
+  const header = rows[0].map((column) => column.trim());
+  const fileDate = normalizeTimestamp((text(file.name).match(/(\d{4}-\d{2}-\d{2})/)?.[1]) || "");
+  const jobs = rows.slice(1)
+    .map((cells) => {
+      const row = {};
+      header.forEach((key, index) => { row[key] = cells[index] ?? ""; });
+      const company = text(row.company);
+      const position = text(row.position);
+      if (!company || !position) return null;
+      const batch = text(row.batch);
+      return {
+        c: company,
+        p: position,
+        ind: text(row.industry),
+        w: batch && normalizeLocationToken(batch) !== normalizeLocationToken("校招") ? batch : "",
+        l: text(row.city),
+        d: text(row.deadline),
+        t: text(row.company_type),
+        u: text(firstValue(row.source_url, row.url)),
+        openDate: text(firstValue(row.publish_date, row.open_date)),
+        _feedUpdatedAt: fileDate,
+      };
+    })
+    .filter(Boolean);
+  return jobs;
+}
+
 export async function fetchSourceJobs(sourceInput, options = {}) {
   const source = sourceInput?.raw ? sourceInput : normalizeSource(sourceInput);
   if (source.type === "greenhouse") return fetchGreenhouseJobs(source, options);
   if (source.type === "lever") return fetchLeverJobs(source, options);
   if (source.type === "community-json") return fetchCommunityJobs(source, options);
+  if (source.type === "community-csv") return fetchCommunityCsvJobs(source, options);
   throw new Error(`不支持的来源类型：${source.type || "空"}`);
 }
 
@@ -1214,7 +1372,7 @@ function previousRecordForSource(record, source, now) {
   if (Array.isArray(record.jobCategories)) retained.jobCategories = [...record.jobCategories];
   const fallbackIsSourceUrl = canonicalUrl(record.campusUrl) === canonicalUrl(source.campusUrl);
   setStateKey(retained, communityStateKey(source, retained, fallbackIsSourceUrl ? "" : record.campusUrl));
-  return setDedupeUrl(retained, source.type === "community-json" || fallbackIsSourceUrl ? "" : record.campusUrl);
+  return setDedupeUrl(retained, (source.type === "community-json" || fallbackIsSourceUrl) ? "" : record.campusUrl);
 }
 
 function previousRecordsBySource(previousPayload, source, now) {

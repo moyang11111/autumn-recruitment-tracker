@@ -60,6 +60,9 @@ function response(body, status = 200) {
     async json() {
       return body;
     },
+    async text() {
+      return typeof body === "string" ? body : JSON.stringify(body);
+    },
   };
 }
 
@@ -376,6 +379,65 @@ test("社区聚合源超长类别会被截断并保留省略号", () => {
   assert.equal(capped.length, 49, "截断后应为 48 字符 + 省略号");
   assert.match(capped, /…$/);
   assert.ok(capped.startsWith(longCategory.slice(0, 48)));
+});
+
+test("社区 CSV 源自动发现最新数据文件并转换为统一记录", async () => {
+  const csvSource = {
+    id: "csv-fixture",
+    name: "Fixture 校招宝聚合",
+    type: "community-csv",
+    endpoint: "https://api.github.com/repos/example/recruit-hub/contents/data",
+    filePattern: "^jobs-.*\\.csv$",
+    companyType: "其他",
+    campusUrl: "https://github.com/example/recruit-hub",
+  };
+  const csvContent = [
+    "company,company_type,batch,industry,position,education,grad_year,city,publish_date,deadline,source,salary,source_domain,source_url",
+    '"火星科技","","校招","互联网","测试开发工程师（广州, 深圳）","","","广东省·深圳市·南山区","2026-09-01","","nowcoder","","","https://careers.example.com/shenzhen-1"',
+    '"中交集团","央国企","校招","建筑","管培生","","","上海,北京,广东省·广州","2026-09-02","","zhiye","","","https://careers.example.com/gz-1"',
+    '"纯外地企业","民企","校招","消费","运营专员","","","江苏省·南京","2026-09-02","","zhiye","","","https://careers.example.com/nj-1"',
+    '"泰康保险","民企","校招","保险","培训生","","","广东省·珠海","2026-08-20","","","","",""',
+    '"全国渠道岗","","校招","消费","渠道经理","","","全国,广东省·广州,海外","2026-08-28","","zhiye","","","https://careers.example.com/qd-1"',
+  ].join("\r\n");
+  const mock = mockFetch({
+    [csvSource.endpoint]: [
+      { name: "jobs-2026-08-24.csv", type: "file", download_url: "https://raw.example.com/jobs-2026-08-24.csv" },
+      { name: "jobs-2026-08-31.csv", type: "file", download_url: "https://raw.example.com/jobs-2026-08-31.csv" },
+    ],
+    "https://raw.example.com/jobs-2026-08-31.csv": csvContent,
+  });
+  const payload = await syncJobs({ sources: [csvSource], fetchImpl: mock.fetchImpl, now: NOW });
+
+  assert.deepEqual(
+    mock.calls.map((call) => call.url),
+    [csvSource.endpoint, "https://raw.example.com/jobs-2026-08-31.csv"],
+    "应先列出目录再下载字典序最新的 CSV 文件",
+  );
+
+  const byCompany = (name) => payload.records.find((record) => record.companyName === name);
+  assert.equal(byCompany("纯外地企业"), undefined, "非广东记录应被过滤");
+  assert.equal(byCompany("中交集团"), undefined, "广东与其他省份并存的岗位应按既有冲突策略丢弃");
+
+  const shenzhen = byCompany("火星科技");
+  assert.equal(shenzhen.province, "广东", "带区县的城市应解析到地级市");
+  assert.equal(shenzhen.city, "深圳");
+  assert.equal(shenzhen.openDate, "2026-09-01", "publish_date 应写入开放日期");
+  assert.equal(shenzhen.deadline, "");
+  assert.equal(shenzhen.campusUrl, "https://careers.example.com/shenzhen-1");
+  assert.equal(shenzhen.sourceType, "community-csv");
+  assert.equal(shenzhen.jobCategories.includes("测试开发工程师（广州, 深圳）"), true, "含逗号的引号字段应完整解析");
+
+  const zhuhai = byCompany("泰康保险");
+  assert.equal(zhuhai.companyType, "私企", "民企 marker 应映射为私企");
+  assert.equal(zhuhai.openDate, "2026-08-20");
+  assert.equal(zhuhai.campusUrl, csvSource.campusUrl, "无链接的记录回退到来源主页");
+
+  const nationwide = byCompany("全国渠道岗");
+  assert.equal(nationwide.province, "广东");
+  assert.equal(nationwide.city, "广州", "全国+广东并存时按既有策略保留广东城市");
+
+  assert.equal(payload.sources[0].sourceUpdatedAt, "2026-08-31T00:00:00.000Z", "来源更新时间取自文件名日期");
+  assert.equal(payload.sources[0].stale, undefined);
 });
 
 test("社区聚合多城市规范化不会因相同投递链接互相去重", () => {

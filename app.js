@@ -1196,11 +1196,15 @@
     ) || (isExampleRecord(record) ? EXAMPLE_SOURCE_NAME : DEFAULT_SYNC_SOURCE_NAME);
   }
 
+  function isCommunityRecord(record) {
+    return record?.sourceType === "community-json" || record?.sourceType === "community-csv";
+  }
+
   function sourceBadgeInfo(record) {
     if (isExampleRecord(record)) {
       return { label: "示例数据", className: "record-source-example" };
     }
-    if (record?.sourceType === "community-json") {
+    if (isCommunityRecord(record)) {
       return { label: "社区聚合", className: "record-source-community" };
     }
     return { label: "自动同步", className: "record-source-sync" };
@@ -1452,7 +1456,7 @@
     if (!campusUrl) {
       return `<span class="campus-link campus-link-disabled" role="status">链接待核实</span>`;
     }
-    const isCommunity = record?.sourceType === "community-json";
+    const isCommunity = isCommunityRecord(record);
     const label = isCommunity ? "查看/核验链接" : (compact ? "打开官网" : "官网");
     const ariaLabel = isCommunity
       ? `查看 ${record.companyName} 招聘核验链接`
@@ -1519,7 +1523,7 @@
         <div class="job-card-field"><span class="job-card-label">岗位方向</span><div class="job-card-value">${renderCategories(record)}</div></div>
         <div class="job-card-field"><span class="job-card-label">工作地点</span><div class="job-card-value">${renderLocation(record)}</div></div>
         <div class="job-card-field"><span class="job-card-label">开放 / 截止</span><div class="job-card-value">${renderDeadline(record, "job-card-deadline")}</div></div>
-        <div class="job-card-field"><span class="job-card-label">${record.sourceType === "community-json" ? "招聘核验链接" : "校招官网"}</span><div class="job-card-value">${renderCampusLink(record, true)}</div></div>
+        <div class="job-card-field"><span class="job-card-label">${isCommunityRecord(record) ? "招聘核验链接" : "校招官网"}</span><div class="job-card-value">${renderCampusLink(record, true)}</div></div>
       </div>
       <div class="job-card-footer">
         ${renderStatusPicker(record, "移动端")}

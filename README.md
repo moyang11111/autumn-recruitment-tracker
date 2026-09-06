@@ -16,7 +16,7 @@ python -m http.server 5173
 
 ## 自动更新招聘信息
 
-- `data/sources.json` 保存公开招聘来源。目前接入 Greenhouse Job Board、Lever Postings，以及有明确开源许可的国内校招社区聚合 JSON，均无需密钥；所有来源最终都经过广东范围过滤。
+- `data/sources.json` 保存公开招聘来源。目前接入 Greenhouse Job Board、Lever Postings，以及有明确开源许可的国内校招社区聚合数据（JSON 与带日期快照的 CSV），均无需密钥；所有来源最终都经过广东范围过滤。
 - `scripts/sync-jobs.mjs` 负责拉取、规范化城市、去重、校验 HTTPS 链接，并同时生成 `data/jobs.generated.json` 和可通过 `file://` 加载的 `data/jobs.generated.js`。社区来源的类别字段会截断到 48 字符（完整信息以校招链接为准）；上游不提供企业性质时，会按企业名保守推断央国企/事业单位/头部民企，其余保持“其他”，推断规则见 `data/README.md`。
 - 某个来源失败时只隔离该来源，并保留上一份有效广东快照；来源会标记为 stale，其他来源仍可继续更新。来源成功读取但上游更新时间超过 14 天时，也会标记为 stale。
 - `.github/workflows/sync-jobs.yml` 支持手动执行，并每 6 小时自动运行一次。测试通过且岗位内容确有变化时，才提交新的快照。
@@ -29,7 +29,7 @@ python -m http.server 5173
 npm run sync
 ```
 
-当前预置 Airbnb Greenhouse、Palantir Lever 两个企业公开源，以及 xiaozhao-radar 国内校招社区聚合源。同步器会显示每个来源的健康状态和广东记录数；本次快照中的社区记录会把一条多城市岗位拆成可独立筛选的广东城市记录，页面会显示“社区聚合”标签。所有记录都应通过企业官网再次核验，第三方许可与归属见 `THIRD_PARTY_NOTICES.md`，字段契约详见 `data/README.md`。
+当前预置 Airbnb Greenhouse、Palantir Lever 两个企业公开源，以及 xiaozhao-radar、recruit-hub 两个国内校招社区聚合源（后者为 `community-csv` 类型：同步时通过 GitHub 目录列表发现最新的带日期 CSV 快照，`publish_date` 会写入开放日期）。同步器会显示每个来源的健康状态和广东记录数；本次快照中的社区记录会把一条多城市岗位拆成可独立筛选的广东城市记录，页面会显示“社区聚合”标签。所有记录都应通过企业官网再次核验，第三方许可与归属见 `THIRD_PARTY_NOTICES.md`，字段契约详见 `data/README.md`。
 
 若 GitHub 仓库启用了严格分支保护，需要允许该工作流写入内容，或把工作流改成自动创建数据更新 PR，否则定时任务可以抓取但无法提交快照。
 

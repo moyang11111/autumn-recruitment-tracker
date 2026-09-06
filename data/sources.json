@@ -27,5 +27,15 @@
     "companyType": "其他",
     "campusUrl": "https://github.com/jiabaobei/xiaozhao-radar",
     "enabled": true
+  },
+  {
+    "id": "community-recruit-hub",
+    "name": "校招宝聚合（recruit-hub，投递前核验）",
+    "type": "community-csv",
+    "endpoint": "https://api.github.com/repos/kknee-dev/recruit-hub/contents/data",
+    "filePattern": "^jobs-.*\\.csv$",
+    "companyType": "其他",
+    "campusUrl": "https://github.com/kknee-dev/recruit-hub",
+    "enabled": true
   }
 ]
