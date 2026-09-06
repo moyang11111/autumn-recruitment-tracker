@@ -381,6 +381,81 @@ test("社区聚合源超长类别会被截断并保留省略号", () => {
   assert.ok(capped.startsWith(longCategory.slice(0, 48)));
 });
 
+test("开放日期晚于截止日期的矛盾记录保留岗位但清空两个日期", () => {
+  const record = normalizeJob({
+    c: "日期矛盾企业",
+    p: "博士后研究人员招聘",
+    l: "深圳",
+    openDate: "2026-08-28",
+    d: "2026-07-03",
+    u: "https://jobs.example.com/postdoc",
+  }, communitySource, NOW);
+  assert.equal(record.companyName, "日期矛盾企业", "岗位本身应保留");
+  assert.equal(record.openDate, "", "矛盾的开放日期应清空");
+  assert.equal(record.deadline, "", "矛盾的截止日期应清空");
+});
+
+test("人工收录源读取本地文件并走统一规范化管线", async () => {
+  const curatedFile = path.join(os.tmpdir(), `curated-fixture-${Date.now()}.json`);
+  await fs.writeFile(curatedFile, JSON.stringify({
+    jobs: [
+      {
+        c: "逐际动力",
+        p: "校招暂未开放（官网88个岗位均为社招）",
+        ind: "人形机器人",
+        l: "深圳",
+        t: "民企",
+        u: "https://career.limxdynamics.com/index",
+        extraCategories: ["运控/强化学习方向", "投递前确认2027届校招计划"],
+      },
+      {
+        c: "众擎机器人",
+        p: "2027届校园招聘（校招官网）",
+        ind: "人形机器人",
+        l: "深圳",
+        d: "2026-10-31",
+        t: "民企",
+        u: "https://jobs.example.com/feishu-campus",
+        openDate: "2026-08-12",
+        extraCategories: ["整机测试工程师", "网申8月12日-10月31日"],
+      },
+      { c: "", p: "无企业名应被丢弃" },
+    ],
+  }), "utf8");
+  try {
+    const curatedSource = {
+      id: "curated-fixture",
+      name: "人工收录（官网逐家核验）",
+      type: "curated-file",
+      file: curatedFile,
+      companyType: "其他",
+    };
+    const payload = await syncJobs({ sources: [curatedSource], fetchImpl: mockFetch({}).fetchImpl, now: NOW });
+
+    assert.equal(payload.records.length, 2, "缺少企业名的行应被丢弃");
+    const engineAI = payload.records.find((record) => record.companyName === "众擎机器人");
+    assert.equal(engineAI.openDate, "2026-08-12", "openDate 应写入开放日期");
+    assert.equal(engineAI.deadline, "2026-10-31");
+    assert.equal(engineAI.companyType, "私企", "民企 marker 应映射为私企");
+    assert.equal(engineAI.province, "广东");
+    assert.equal(engineAI.city, "深圳");
+    assert.equal(engineAI.sourceType, "curated-file");
+    assert.deepEqual(
+      engineAI.jobCategories.includes("整机测试工程师") && engineAI.jobCategories.includes("网申8月12日-10月31日"),
+      true,
+      "extraCategories 应并入岗位类别",
+    );
+
+    const limx = payload.records.find((record) => record.companyName === "逐际动力");
+    assert.equal(limx.openDate, "", "未公布开始时间时保持为空");
+    assert.equal(limx.campusUrl, "https://career.limxdynamics.com/index");
+    assert.equal(payload.sources[0].status, "ok");
+    assert.equal(payload.sources[0].stale, undefined, "无上游更新时间的人工收录不应标记 stale");
+  } finally {
+    await fs.rm(curatedFile, { force: true });
+  }
+});
+
 test("社区 CSV 源自动发现最新数据文件并转换为统一记录", async () => {
   const csvSource = {
     id: "csv-fixture",

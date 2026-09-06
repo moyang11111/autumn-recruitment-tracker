@@ -37,5 +37,13 @@
     "companyType": "其他",
     "campusUrl": "https://github.com/kknee-dev/recruit-hub",
     "enabled": true
+  },
+  {
+    "id": "curated-robotics",
+    "name": "人工收录（官网逐家核验）",
+    "type": "curated-file",
+    "file": "data/curated.json",
+    "companyType": "其他",
+    "enabled": true
   }
 ]

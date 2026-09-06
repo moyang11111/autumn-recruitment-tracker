@@ -21,7 +21,7 @@ export const VALID_STATUSES = new Set([
 ]);
 
 export const VALID_COMPANY_TYPES = new Set(["央国企", "私企", "外企", "事业单位", "其他"]);
-export const VALID_SOURCE_TYPES = new Set(["greenhouse", "lever", "community-json", "community-csv"]);
+export const VALID_SOURCE_TYPES = new Set(["greenhouse", "lever", "community-json", "community-csv", "curated-file"]);
 
 export const GUANGDONG_PROVINCE = "广东";
 export const GUANGDONG_CITIES = Object.freeze([
@@ -377,6 +377,7 @@ export function normalizeSource(source, index = 0) {
   const boardToken = text(firstValue(raw.boardToken, raw.token, raw.board));
   const site = text(firstValue(raw.site, raw.company, raw.slug, raw.account));
   const filePattern = text(firstValue(raw.filePattern, raw.file_pattern));
+  const file = text(firstValue(raw.file, raw.filePath, raw.file_path));
   const timeoutCandidate = Number(raw.timeoutMs ?? raw.requestTimeoutMs);
 
   return {
@@ -393,6 +394,7 @@ export function normalizeSource(source, index = 0) {
     boardToken,
     site,
     filePattern,
+    file,
     enabled: raw.enabled !== false && raw.active !== false,
     allowEmpty: raw.allowEmpty === true,
     timeoutMs: Number.isFinite(timeoutCandidate) && timeoutCandidate > 0
@@ -548,7 +550,7 @@ function communityLocation(job) {
 }
 
 function isCommunitySource(source) {
-  return source?.type === "community-json" || source?.type === "community-csv";
+  return ["community-json", "community-csv", "curated-file"].includes(source?.type);
 }
 
 function rawJobCategories(job, source) {
@@ -574,7 +576,13 @@ function rawJobCategories(job, source) {
   }
 
   if (isCommunitySource(source)) {
-    return [job?.p, job?.ind, job?.w, ...source.categoryDefaults];
+    return [
+      job?.p,
+      job?.ind,
+      job?.w,
+      ...(Array.isArray(job?.extraCategories) ? job.extraCategories : []),
+      ...source.categoryDefaults,
+    ];
   }
 
   return source.categoryDefaults;
@@ -806,12 +814,17 @@ function buildRecord({
   statusUpdatedAt,
   isDemo,
 }) {
+  const safeOpenDate = normalizeDateOnly(openDate);
+  const safeDeadline = normalizeDateOnly(deadline);
+  // 前端契约要求开放日期不得晚于截止日期；上游经常把长期招聘的旧截止
+  // 日期带在行里，此时把两个日期一起清空为“待公布”，保住岗位本身。
+  const datesAreConsistent = !(safeOpenDate && safeDeadline && safeOpenDate > safeDeadline);
   return {
     id: text(id),
     companyName: text(companyName),
     companyType: VALID_COMPANY_TYPES.has(companyType) ? companyType : "其他",
-    openDate: normalizeDateOnly(openDate),
-    deadline: normalizeDateOnly(deadline),
+    openDate: datesAreConsistent ? safeOpenDate : "",
+    deadline: datesAreConsistent ? safeDeadline : "",
     province: text(province),
     city: text(city),
     jobCategories: cleanList([jobCategories ?? []].flat(Infinity).map(capCategoryText)),
@@ -1228,12 +1241,53 @@ export async function fetchCommunityCsvJobs(sourceInput, options = {}) {
   return jobs;
 }
 
+// 人工收录来源：读取仓库内的 data/curated.json（无网络请求）。
+// 浏览企业官网/校招站人工核对后的记录写在 curated 文件里，每次同步都会
+// 重新并入快照；行结构与社区聚合一致（c/p/ind/w/l/d/t/u + openDate），
+// 额外岗位方向放在 extraCategories 数组中。
+async function fetchCuratedFileJobs(sourceInput, options = {}) {
+  const source = sourceInput?.raw ? sourceInput : normalizeSource(sourceInput);
+  if (!source.file) throw new Error("人工收录来源缺少 file 字段");
+  const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const filePath = path.isAbsolute(source.file) ? source.file : path.resolve(rootDir, source.file);
+  const raw = await fsp.readFile(filePath, "utf8");
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(`人工收录文件不是合法 JSON：${error.message}`);
+  }
+  const jobs = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.jobs) ? parsed.jobs : null);
+  if (!jobs) throw new Error("人工收录文件缺少岗位数组");
+  return jobs
+    .map((job) => {
+      if (!job || typeof job !== "object" || Array.isArray(job)) return null;
+      const company = text(firstValue(job.c, job.companyName, job.company));
+      const title = text(firstValue(job.p, job.position, job.title));
+      if (!company || !title) return null;
+      return {
+        ...job,
+        c: company,
+        p: title,
+        ind: text(firstValue(job.ind, job.industry)),
+        w: text(firstValue(job.w, job.batch)),
+        l: text(firstValue(job.l, job.city, job.location)),
+        d: text(firstValue(job.d, job.deadline)),
+        t: text(firstValue(job.t, job.company_type, job.companyType)),
+        u: text(firstValue(job.u, job.url, job.source_url)),
+        openDate: text(firstValue(job.openDate, job.publish_date)),
+      };
+    })
+    .filter(Boolean);
+}
+
 export async function fetchSourceJobs(sourceInput, options = {}) {
   const source = sourceInput?.raw ? sourceInput : normalizeSource(sourceInput);
   if (source.type === "greenhouse") return fetchGreenhouseJobs(source, options);
   if (source.type === "lever") return fetchLeverJobs(source, options);
   if (source.type === "community-json") return fetchCommunityJobs(source, options);
   if (source.type === "community-csv") return fetchCommunityCsvJobs(source, options);
+  if (source.type === "curated-file") return fetchCuratedFileJobs(source, options);
   throw new Error(`不支持的来源类型：${source.type || "空"}`);
 }
 

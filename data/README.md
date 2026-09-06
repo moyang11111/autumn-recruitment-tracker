@@ -60,7 +60,7 @@ Greenhouse 使用 `boardToken`，请求地址为 `https://boards-api.greenhouse.
 
 `community-csv` 来源（如 recruit-hub）指向 GitHub 目录列表 API，并通过 `filePattern` 在目录中挑选字典序最新的数据文件（如 `jobs-2026-09-03.csv`）；文件名中的日期作为该来源的 `sourceUpdatedAt`，超过 14 天会标记 stale。CSV 列按表头映射：`company`→企业、`position`/`industry`/`batch`→类别（泛指的“校招”批次不写入）、`city`→地点（支持“广东省·深圳市·南山区”与逗号分隔多城市，只保留广东）、`publish_date`→`openDate`（即页面展示的开放/开始时间）、`deadline`→截止日期、`source_url`→投递链接（缺失时回退来源主页）；`company_type` 中的“民企/央国企/外企/事业单位”会映射为对应枚举。
 
-`openDate`、`deadline`、`sourceUpdatedAt` 只有来源明确提供并且可验证时才写入；未知日期使用空字符串，不用抓取时间代替。来源若提供 `sourceUpdatedAt`，同步检查时间与其相差超过 14 天会额外标记 `stale: true`；读取失败或禁用的来源也会标记为 stale，但仍保留该来源上一次广东记录。新岗位的 `status` 为 `未投递`，再次同步时会按稳定 ID 保留已有的投递状态和状态更新时间；社区记录还会按公司、广东城市和具体投递链接关联状态，因此标题、批次或类别的小变化不会清空进度。初始空快照的来源状态为 `not_checked`；实际同步后使用 `ok`、`error` 或 `disabled`。
+`openDate`、`deadline`、`sourceUpdatedAt` 只有来源明确提供并且可验证时才写入；未知日期使用空字符串，不用抓取时间代替。开放日期不得晚于截止日期：上游同时给出矛盾日期时（常见于长期招聘带着旧截止日期），两个日期都会清空为待公布，岗位本身保留。来源若提供 `sourceUpdatedAt`，同步检查时间与其相差超过 14 天会额外标记 `stale: true`；读取失败或禁用的来源也会标记为 stale，但仍保留该来源上一次广东记录。新岗位的 `status` 为 `未投递`，再次同步时会按稳定 ID 保留已有的投递状态和状态更新时间；社区记录还会按公司、广东城市和具体投递链接关联状态，因此标题、批次或类别的小变化不会清空进度。初始空快照的来源状态为 `not_checked`；实际同步后使用 `ok`、`error` 或 `disabled`。
 
 ## 安全与容错
 

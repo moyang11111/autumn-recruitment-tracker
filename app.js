@@ -1204,6 +1204,9 @@
     if (isExampleRecord(record)) {
       return { label: "示例数据", className: "record-source-example" };
     }
+    if (record?.sourceType === "curated-file") {
+      return { label: "人工收录", className: "record-source-curated" };
+    }
     if (isCommunityRecord(record)) {
       return { label: "社区聚合", className: "record-source-community" };
     }
