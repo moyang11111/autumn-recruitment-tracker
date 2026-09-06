@@ -381,6 +381,61 @@ test("社区聚合源超长类别会被截断并保留省略号", () => {
   assert.ok(capped.startsWith(longCategory.slice(0, 48)));
 });
 
+test("公司级聚合源按城市拆分多省公司并保留广东条目", async () => {
+  const companySource = {
+    id: "company-json-fixture",
+    name: "Fixture 公司级聚合",
+    type: "company-json",
+    endpoint: "https://raw.githubusercontent.com/example/company-feed/main/data.json",
+    companyType: "其他",
+    campusUrl: "https://github.com/example/company-feed",
+  };
+  const jobs = [
+    {
+      company: "创维集团-2027届全球校园招聘",
+      industry: "智能家电",
+      nature: "民营/上市集团",
+      location: "深圳、广州、南京、武汉等及海外，以岗位页为准",
+      recruitmentType: "正式批/全球校园招聘",
+      roles: "技术研发、算法、测试",
+      applyUrl: "https://careers.example.com/skyworth",
+      openDate: "2026-08-07",
+      deadline: "2026-10-15",
+    },
+    {
+      company: "高盛",
+      industry: "外企",
+      batch: "实习",
+      cohort: "2027届",
+      locations: ["北京", "上海", "深圳", "香港"],
+      deadline: "2026-10-05",
+      apply_url: null,
+    },
+  ];
+  const mock = mockFetch({ [companySource.endpoint]: jobs });
+  const payload = await syncJobs({ sources: [companySource], fetchImpl: mock.fetchImpl, now: NOW });
+
+  const skyworth = payload.records.filter((record) => record.companyName === "创维集团-2027届全球校园招聘");
+  assert.deepEqual(
+    skyworth.map((record) => record.city).sort(),
+    ["广州", "深圳"],
+    "广东城市按城市拆分保留，南京/武汉等外省城市被过滤",
+  );
+  assert.equal(skyworth[0].openDate, "2026-08-07");
+  assert.equal(skyworth[0].deadline, "2026-10-15");
+  assert.equal(skyworth[0].companyType, "私企", "民营 marker 应映射为私企");
+  assert.equal(skyworth[0].campusUrl, "https://careers.example.com/skyworth");
+  assert.equal(skyworth[0].jobCategories.includes("技术研发"), true, "roles 应并入岗位类别");
+
+  const goldman = payload.records.filter((record) => record.companyName === "高盛");
+  assert.equal(goldman.length, 1, "多城市公司应拆分并只保留广东城市");
+  assert.equal(goldman[0].city, "深圳");
+  assert.equal(goldman[0].deadline, "2026-10-05");
+  assert.equal(goldman[0].companyType, "外企", "industry 中的外企 marker 应生效");
+  assert.equal(goldman[0].campusUrl, companySource.campusUrl, "无投递链接时回退来源主页");
+  assert.equal(goldman[0].jobCategories.includes("2027届·实习"), true, "批次应作为职位标题保留");
+});
+
 test("开放日期晚于截止日期的矛盾记录保留岗位但清空两个日期", () => {
   const record = normalizeJob({
     c: "日期矛盾企业",

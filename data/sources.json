@@ -45,5 +45,23 @@
     "file": "data/curated.json",
     "companyType": "其他",
     "enabled": true
+  },
+  {
+    "id": "company-xixicc2027",
+    "name": "2027届秋招信息聚合（xixicc，投递前核验）",
+    "type": "company-json",
+    "endpoint": "https://raw.githubusercontent.com/xixicc186/xixicc2027/main/jobs.json",
+    "companyType": "其他",
+    "campusUrl": "https://github.com/xixicc186/xixicc2027",
+    "enabled": true
+  },
+  {
+    "id": "company-2027-autumn",
+    "name": "2027届秋招投递信息（每日核验，投递前核验）",
+    "type": "company-json",
+    "endpoint": "https://raw.githubusercontent.com/houhouhou218/2027-autumn-recruitment/main/data.json",
+    "companyType": "其他",
+    "campusUrl": "https://github.com/houhouhou218/2027-autumn-recruitment",
+    "enabled": true
   }
 ]

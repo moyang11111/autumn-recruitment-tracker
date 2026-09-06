@@ -21,7 +21,7 @@ export const VALID_STATUSES = new Set([
 ]);
 
 export const VALID_COMPANY_TYPES = new Set(["央国企", "私企", "外企", "事业单位", "其他"]);
-export const VALID_SOURCE_TYPES = new Set(["greenhouse", "lever", "community-json", "community-csv", "curated-file"]);
+export const VALID_SOURCE_TYPES = new Set(["greenhouse", "lever", "community-json", "community-csv", "curated-file", "company-json"]);
 
 export const GUANGDONG_PROVINCE = "广东";
 export const GUANGDONG_CITIES = Object.freeze([
@@ -550,7 +550,7 @@ function communityLocation(job) {
 }
 
 function isCommunitySource(source) {
-  return ["community-json", "community-csv", "curated-file"].includes(source?.type);
+  return ["community-json", "community-csv", "curated-file", "company-json"].includes(source?.type);
 }
 
 function rawJobCategories(job, source) {
@@ -989,7 +989,9 @@ export function normalizeJobs(job, sourceInput, nowInput) {
     ? greenhouseLocation(raw)
     : (source.type === "lever" ? leverLocation(raw) : communityLocation(raw));
   const locations = normalizeLocations(locationValue, source.defaultProvince, source.defaultCity);
-  if (hasConflictingLocations(locations)) return [];
+  // 公司级记录在多省招聘时按城市拆分保留：公司只要在广东招聘，
+  // 广东条目就成立；岗位级记录仍维持“混合省份即丢弃”的保守策略。
+  if (source.type !== "company-json" && hasConflictingLocations(locations)) return [];
   return locations
     .filter(isGuangdongLocation)
     .map((location) => normalizeJobAtLocation(raw, source, now, location))
@@ -1281,6 +1283,55 @@ async function fetchCuratedFileJobs(sourceInput, options = {}) {
     .filter(Boolean);
 }
 
+// 公司级聚合源（company-json）：上游以公司为单位记录校招计划，字段命名
+// 不统一，这里做宽松映射后走统一管线。与岗位级记录不同，公司同时在
+// 多省招聘时按城市拆分保留（公司若在广东有招聘，广东条目就值得单独跟踪）。
+async function fetchCompanyJsonJobs(sourceInput, options = {}) {
+  const source = sourceInput?.raw ? sourceInput : normalizeSource(sourceInput);
+  const data = await fetchJson(sourceEndpoint(source), {
+    ...options,
+    timeoutMs: options.timeoutMs ?? source.timeoutMs,
+  });
+  const jobs = Array.isArray(data) ? data : (data && typeof data === "object"
+    ? [data.jobs, data.records, data.data, data.companies, data.items].find(Array.isArray)
+    : null);
+  if (!jobs) throw new Error("公司级聚合响应缺少岗位数组");
+  // 根对象上的更新时间作为整源的新鲜度参考（如 updatedAt/verifiedDate）。
+  const feedUpdatedAt = data && typeof data === "object" && !Array.isArray(data)
+    ? normalizeTimestamp(firstValue(data.updatedAt, data.updated, data.verifiedDate))
+    : "";
+  return jobs
+    .map((raw) => {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+      const company = text(firstValue(raw.c, raw.company, raw.companyName));
+      if (!company) return null;
+      const locations = Array.isArray(raw.locations) ? raw.locations.map(text).filter(Boolean).join("/") : text(firstValue(raw.l, raw.location, raw.city));
+      const roles = (Array.isArray(raw.positions) ? raw.positions : [firstValue(raw.positions, raw.roles)])
+        .flatMap((entry) => text(entry).split(/[、,，;；]+/))
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+      const title = text(firstValue(
+        raw.p, raw.title,
+        [raw.cohort, raw.batch].filter((part) => text(part)).join("·"),
+        raw.recruitmentType, raw.program,
+      )) || "校园招聘";
+      return {
+        c: company,
+        p: title,
+        ind: text(firstValue(raw.ind, raw.industry)),
+        w: text(firstValue(raw.w, raw.batch)),
+        l: locations,
+        d: text(firstValue(raw.d, raw.deadline)),
+        t: text(firstValue(raw.t, raw.nature, raw.company_type, raw.companyType, raw.ownership, raw.industry)),
+        u: text(firstValue(raw.u, raw.applyUrl, raw.apply_url, raw.url, raw.sourceUrl)),
+        openDate: text(firstValue(raw.openDate, raw.publish_date)),
+        extraCategories: roles,
+        _feedUpdatedAt: normalizeTimestamp(firstValue(raw.last_seen, raw.verifiedDate, raw.updated)) || feedUpdatedAt,
+      };
+    })
+    .filter(Boolean);
+}
+
 export async function fetchSourceJobs(sourceInput, options = {}) {
   const source = sourceInput?.raw ? sourceInput : normalizeSource(sourceInput);
   if (source.type === "greenhouse") return fetchGreenhouseJobs(source, options);
@@ -1288,6 +1339,7 @@ export async function fetchSourceJobs(sourceInput, options = {}) {
   if (source.type === "community-json") return fetchCommunityJobs(source, options);
   if (source.type === "community-csv") return fetchCommunityCsvJobs(source, options);
   if (source.type === "curated-file") return fetchCuratedFileJobs(source, options);
+  if (source.type === "company-json") return fetchCompanyJsonJobs(source, options);
   throw new Error(`不支持的来源类型：${source.type || "空"}`);
 }
 
