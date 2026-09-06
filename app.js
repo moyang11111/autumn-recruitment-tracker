@@ -40,7 +40,9 @@
   const MAX_RECRUITMENT_YEAR = 9999;
   const EXAMPLE_SOURCE_NAME = "内置示例";
   const DEFAULT_SYNC_SOURCE_NAME = "自动同步源";
-  const MAX_RENDERED_RECORDS = 80;
+  const DEFAULT_PAGE_SIZE = 80;
+  const ALL_PAGE_SIZE = "all";
+  const PAGE_SIZE_OPTIONS = Object.freeze([DEFAULT_PAGE_SIZE, 160, ALL_PAGE_SIZE]);
   const LATEST_SNAPSHOT_URL = "data/jobs.generated.json";
   const TRACKING_QUERY_PARAMETER_PATTERN = /^(?:utm_|gh_src$|source$)/i;
 
@@ -80,6 +82,8 @@
       status: "",
     },
     sort: "default",
+    currentPage: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
     storageAvailable: false,
     currentRecordIds: new Set(),
     cityDraft: {
@@ -1241,6 +1245,53 @@
     return indexed.map(({ record }) => record);
   }
 
+  function normalizePageSize(value) {
+    if (value === ALL_PAGE_SIZE || value === "全部") return ALL_PAGE_SIZE;
+    const numericValue = typeof value === "number" ? value : Number(value);
+    return Number.isInteger(numericValue) && numericValue > 0
+      ? numericValue
+      : DEFAULT_PAGE_SIZE;
+  }
+
+  function calculatePageCount(totalCount, pageSize = DEFAULT_PAGE_SIZE) {
+    const safeTotalCount = Number.isFinite(Number(totalCount))
+      ? Math.max(0, Math.trunc(Number(totalCount)))
+      : 0;
+    const normalizedPageSize = normalizePageSize(pageSize);
+    if (safeTotalCount === 0) return 0;
+    if (normalizedPageSize === ALL_PAGE_SIZE) return 1;
+    return Math.ceil(safeTotalCount / normalizedPageSize);
+  }
+
+  function paginateRecords(records, page = 1, pageSize = DEFAULT_PAGE_SIZE) {
+    const source = Array.isArray(records) ? records : [];
+    const normalizedPageSize = normalizePageSize(pageSize);
+    const totalCount = source.length;
+    const totalPages = calculatePageCount(totalCount, normalizedPageSize);
+    const requestedPage = Number.isFinite(Number(page)) ? Math.trunc(Number(page)) : 1;
+    const currentPage = totalPages === 0
+      ? 1
+      : Math.min(Math.max(requestedPage, 1), totalPages);
+    const startIndex = normalizedPageSize === ALL_PAGE_SIZE || totalCount === 0
+      ? 0
+      : (currentPage - 1) * normalizedPageSize;
+    const endIndex = normalizedPageSize === ALL_PAGE_SIZE
+      ? totalCount
+      : Math.min(startIndex + normalizedPageSize, totalCount);
+    const pageRecords = source.slice(startIndex, endIndex);
+
+    return {
+      records: pageRecords,
+      page: currentPage,
+      currentPage,
+      pageSize: normalizedPageSize,
+      totalCount,
+      totalPages,
+      start: pageRecords.length > 0 ? startIndex + 1 : 0,
+      end: pageRecords.length > 0 ? endIndex : 0,
+    };
+  }
+
   function recordMatchesFilters(record, filters = state.filters) {
     const keyword = normalizeSearchText(filters.keyword);
     if (keyword) {
@@ -1265,6 +1316,38 @@
     return (Array.isArray(records) ? records : [])
       .filter(isFocusRecord)
       .filter((record) => recordMatchesFilters(record, filters));
+  }
+
+  function getMatchingRecords(records = state.records, filters = state.filters, sortValue = state.sort) {
+    return sortRecords(filterRecords(records, filters), sortValue);
+  }
+
+  function getExportRecords() {
+    return getMatchingRecords();
+  }
+
+  function resetPagination() {
+    state.currentPage = 1;
+    return state.currentPage;
+  }
+
+  function setFilterValue(name, value) {
+    if (!Object.prototype.hasOwnProperty.call(state.filters, name)) return false;
+    state.filters[name] = typeof value === "string" ? value : String(value ?? "");
+    resetPagination();
+    return true;
+  }
+
+  function setSortValue(value) {
+    state.sort = typeof value === "string" && value ? value : "default";
+    resetPagination();
+    return state.sort;
+  }
+
+  function setPageSize(value) {
+    state.pageSize = normalizePageSize(value);
+    resetPagination();
+    return state.pageSize;
   }
 
   function calculateStats(records = state.records) {
@@ -1523,6 +1606,7 @@
 
     state.filters.province = normalizedProvince;
     state.filters.city = normalizedCity;
+    resetPagination();
     state.cityRequest.loading = false;
     state.cityRequest.hasRequested = true;
     const records = filterRecords(state.records, state.filters);
@@ -1640,12 +1724,45 @@
     updateCityFetchState();
   }
 
-  function updateResultsSummary(matchCount, renderedCount = matchCount) {
+  function setPaginationButtonDisabled(button, disabled) {
+    if (!button) return;
+    button.disabled = disabled;
+    button.setAttribute("aria-disabled", String(disabled));
+  }
+
+  function updatePaginationControls(pageInfo) {
+    if (!hasDocument || !dom.paginationControls) return;
+    const hasResults = pageInfo.totalCount > 0;
+    const hasPreviousPage = hasResults && pageInfo.currentPage > 1;
+    const hasNextPage = hasResults && pageInfo.currentPage < pageInfo.totalPages;
+
+    dom.paginationControls.hidden = false;
+    if (dom.paginationRange) {
+      dom.paginationRange.textContent = hasResults
+        ? `第 ${pageInfo.start}–${pageInfo.end} 条，共 ${pageInfo.totalCount} 条`
+        : "暂无匹配结果，共 0 条";
+    }
+    if (dom.paginationPageStatus) {
+      dom.paginationPageStatus.textContent = hasResults
+        ? `第 ${pageInfo.currentPage} / ${pageInfo.totalPages} 页`
+        : "暂无结果";
+      dom.paginationPageStatus.setAttribute(
+        "aria-label",
+        hasResults
+          ? `当前第 ${pageInfo.currentPage} 页，共 ${pageInfo.totalPages} 页`
+          : "当前没有可分页的结果",
+      );
+    }
+    if (dom.pageSizeSelect) dom.pageSizeSelect.value = String(pageInfo.pageSize);
+    setPaginationButtonDisabled(dom.firstPageButton, !hasPreviousPage);
+    setPaginationButtonDisabled(dom.previousPageButton, !hasPreviousPage);
+    setPaginationButtonDisabled(dom.nextPageButton, !hasNextPage);
+    setPaginationButtonDisabled(dom.lastPageButton, !hasNextPage);
+  }
+
+  function updateResultsSummary(matchCount) {
     if (!dom.resultsCount) return;
-    const limitedNote = renderedCount < matchCount
-      ? ` · 当前展示前 ${renderedCount} 条，请继续筛选缩小范围`
-      : "";
-    dom.resultsCount.textContent = `共 ${matchCount} / ${state.records.length} 个岗位${limitedNote}`;
+    dom.resultsCount.textContent = `共 ${matchCount} / ${state.records.length} 个岗位`;
   }
 
   function updateEmptyState(isEmpty) {
@@ -1663,14 +1780,18 @@
     dom.emptyState.hidden = !isEmpty;
   }
 
-  function renderResults() {
+  function renderResults({ resetPage = false } = {}) {
+    if (resetPage) resetPagination();
     const filteredRecords = filterRecords(state.records);
     const matchingRecords = sortRecords(filteredRecords, state.sort);
-    const visibleRecords = matchingRecords.slice(0, MAX_RENDERED_RECORDS);
-    updateResultsSummary(matchingRecords.length, visibleRecords.length);
+    const pageInfo = paginateRecords(matchingRecords, state.currentPage, state.pageSize);
+    state.currentPage = pageInfo.currentPage;
+    state.pageSize = pageInfo.pageSize;
+    updateResultsSummary(matchingRecords.length);
     updateDiscoverySummary(filteredRecords);
-    renderTable(visibleRecords);
-    renderMobileCards(visibleRecords);
+    updatePaginationControls(pageInfo);
+    renderTable(pageInfo.records);
+    renderMobileCards(pageInfo.records);
     const isEmpty = matchingRecords.length === 0;
     if (dom.desktopTableView) dom.desktopTableView.hidden = isEmpty;
     if (dom.mobileCardView) dom.mobileCardView.hidden = isEmpty;
@@ -1730,7 +1851,7 @@
       lastResultCount: 0,
     };
     syncControls();
-    renderResults();
+    renderResults({ resetPage: true });
     if (showMessage) showToast(`已清除其他筛选，保留${focusProvince}范围`);
   }
 
@@ -1743,7 +1864,7 @@
     state.cityRequest.lastError = "";
     state.cityRequest.lastResultCount = 0;
     syncControls();
-    renderResults();
+    renderResults({ resetPage: true });
     if (showMessage) showToast(`已恢复${focusProvince}全省`);
   }
 
@@ -1783,7 +1904,32 @@
       updateCityFetchState();
       return;
     }
-    state.filters[name] = field.value;
+    setFilterValue(name, field.value);
+    renderResults();
+  }
+
+  function handlePaginationAction(event) {
+    const button = event.target.closest?.("[data-pagination-action]");
+    if (!button || button.disabled) return;
+    const pageInfo = paginateRecords(getMatchingRecords(), state.currentPage, state.pageSize);
+    if (pageInfo.totalPages === 0) return;
+
+    if (button.dataset.paginationAction === "first") {
+      state.currentPage = 1;
+    } else if (button.dataset.paginationAction === "previous") {
+      state.currentPage = Math.max(1, pageInfo.currentPage - 1);
+    } else if (button.dataset.paginationAction === "next") {
+      state.currentPage = Math.min(pageInfo.totalPages, pageInfo.currentPage + 1);
+    } else if (button.dataset.paginationAction === "last") {
+      state.currentPage = pageInfo.totalPages;
+    } else {
+      return;
+    }
+    renderResults();
+  }
+
+  function handlePageSizeChange(event) {
+    setPageSize(event.target.value);
     renderResults();
   }
 
@@ -1970,18 +2116,20 @@
     dom.emptyRestoreCitiesButton?.addEventListener("click", () => restoreAllCities(true));
     dom.cityFetchButton?.addEventListener("click", handleCityFetch);
     dom.sortSelect?.addEventListener("change", (event) => {
-      state.sort = event.target.value;
+      setSortValue(event.target.value);
       renderResults();
     });
+    dom.paginationControls?.addEventListener("click", handlePaginationAction);
+    dom.pageSizeSelect?.addEventListener("change", handlePageSizeChange);
     dom.tableBody?.addEventListener("change", handleStatusChange);
     dom.mobileCardView?.addEventListener("change", handleStatusChange);
     dom.exportButton?.addEventListener("click", () => {
-      const records = sortRecords(filterRecords(state.records), state.sort);
+      const records = getExportRecords();
       downloadCsv(records);
       showToast(`已导出 ${records.length} 条岗位记录`);
     });
     dom.heroExportButton?.addEventListener("click", () => {
-      const records = sortRecords(filterRecords(state.records), state.sort);
+      const records = getExportRecords();
       downloadCsv(records);
       showToast(`已导出 ${records.length} 条岗位记录`);
     });
@@ -2032,6 +2180,14 @@
       emptyStateTitle: byId("emptyStateTitle"),
       emptyStateDescription: byId("emptyStateDescription"),
       resultsCount: byId("resultsCount"),
+      paginationControls: byId("paginationControls"),
+      paginationRange: byId("paginationRange"),
+      paginationPageStatus: byId("paginationPageStatus"),
+      pageSizeSelect: byId("pageSizeSelect"),
+      firstPageButton: byId("firstPageButton"),
+      previousPageButton: byId("previousPageButton"),
+      nextPageButton: byId("nextPageButton"),
+      lastPageButton: byId("lastPageButton"),
       cityDiscoveryContext: byId("cityDiscoveryContext"),
       cityMatchCount: byId("cityMatchCount"),
       citySourceCount: byId("citySourceCount"),
@@ -2084,7 +2240,19 @@
     focusProvince,
     focusCities: [...focusCities],
     storageKey,
-    maxRenderedRecords: MAX_RENDERED_RECORDS,
+    defaultPageSize: DEFAULT_PAGE_SIZE,
+    pageSizeOptions: [...PAGE_SIZE_OPTIONS],
+    // Backward-compatible name: 80 is now the default page size, not a render cap.
+    maxRenderedRecords: DEFAULT_PAGE_SIZE,
+    normalizePageSize,
+    calculatePageCount,
+    paginateRecords,
+    getMatchingRecords,
+    getExportRecords,
+    resetPagination,
+    setFilterValue,
+    setSortValue,
+    setPageSize,
     calculateStats,
     calculateSnapshotSummary,
     calculateDiscoverySummary,
