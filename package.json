@@ -5,7 +5,7 @@
   "description": "无依赖的静态广东秋招资源汇总与投递进度管理平台",
   "type": "commonjs",
   "scripts": {
-    "test": "node tests/verify.mjs && node --test tests/sync-jobs.test.mjs && node tests/status-assistant.test.mjs && node tests/city-discovery.test.mjs",
+    "test": "node tests/verify.mjs && node --test tests/sync-jobs.test.mjs && node tests/status-assistant.test.mjs && node tests/city-discovery.test.mjs && node tests/pagination.test.mjs",
     "test:sync": "node --test tests/sync-jobs.test.mjs",
     "test:ui": "node tests/status-assistant.test.mjs && node tests/city-discovery.test.mjs",
     "test:integration": "node tests/verify.mjs --integration",

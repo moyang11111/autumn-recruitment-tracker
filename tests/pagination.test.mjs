@@ -36,6 +36,8 @@ function loadApp(payload) {
   return context.AutumnRecruitmentApp;
 }
 
+// 快照是随上游变化的数据文件，所有条数断言均从快照动态推导，
+// 避免上游增删岗位后测试失败并阻塞定时同步。
 const frozenSnapshot = JSON.parse(
   fs.readFileSync(path.join(ROOT, "data", "jobs.generated.json"), "utf8"),
 );
@@ -45,13 +47,14 @@ const stylesSource = fs.readFileSync(path.join(ROOT, "styles.css"), "utf8");
 const app = loadApp(frozenSnapshot);
 const snapshotSummary = app.calculateSnapshotSummary();
 const matchingRecords = app.getMatchingRecords();
+const totalCount = matchingRecords.length;
 
-assert.equal(snapshotSummary.syncJobCount, 619, "应加载 619 条同步岗位");
+assert.equal(snapshotSummary.syncJobCount, frozenSnapshot.records.length, "应加载快照中的全部同步岗位");
 assert.equal(snapshotSummary.exampleJobCount, 5, "应保留 5 条示例岗位");
-assert.equal(matchingRecords.length, 624, "默认结果应包含全部 624 条岗位");
+assert.equal(totalCount, snapshotSummary.syncJobCount + snapshotSummary.exampleJobCount, "默认结果应包含全部同步与示例岗位");
 assert.equal(app.defaultPageSize, 80);
 assert.deepEqual(Array.from(app.pageSizeOptions), [80, 160, "all"]);
-assert.equal(app.calculatePageCount(624, 80), 8);
+assert.equal(app.calculatePageCount(totalCount, 80), Math.ceil(totalCount / 80));
 assert.doesNotMatch(appSource, /MAX_RENDERED_RECORDS|slice\(\s*0\s*,\s*80\s*\)/);
 
 for (const controlId of [
@@ -75,28 +78,35 @@ assert.match(
   "分页控件应在 320px 所属断点改为纵向布局",
 );
 
-const firstPage = app.paginateRecords(matchingRecords);
+const totalPages = app.calculatePageCount(totalCount, 80);
+// 分页机制用固定长度的合成数组验证，避免依赖快照规模；
+// 快照本身的数量断言在上方已经完成。
+const pageFixture = Array.from({ length: 624 }, (_, index) => (
+  matchingRecords[index % Math.max(matchingRecords.length, 1)]
+));
+const fixtureTotalPages = app.calculatePageCount(624, 80);
+const firstPage = app.paginateRecords(pageFixture);
 assert.equal(firstPage.currentPage, 1);
-assert.equal(firstPage.totalPages, 8);
+assert.equal(firstPage.totalPages, fixtureTotalPages);
 assert.equal(firstPage.records.length, 80);
 assert.equal(firstPage.start, 1);
 assert.equal(firstPage.end, 80);
 
-const secondPage = app.paginateRecords(matchingRecords, 2, 80);
+const secondPage = app.paginateRecords(pageFixture, 2, 80);
 assert.equal(secondPage.currentPage, 2);
 assert.equal(secondPage.records.length, 80);
 assert.equal(secondPage.start, 81);
 assert.equal(secondPage.end, 160);
-assert.equal(secondPage.records[0].id, matchingRecords[80].id);
+assert.equal(secondPage.records[0].id, pageFixture[80].id);
 
-const lastPage = app.paginateRecords(matchingRecords, 8, 80);
-assert.equal(lastPage.currentPage, 8);
-assert.equal(lastPage.records.length, 64);
-assert.equal(lastPage.start, 561);
+const lastPage = app.paginateRecords(pageFixture, fixtureTotalPages, 80);
+assert.equal(lastPage.currentPage, fixtureTotalPages);
+assert.equal(lastPage.records.length, 624 - (fixtureTotalPages - 1) * 80);
+assert.equal(lastPage.start, (fixtureTotalPages - 1) * 80 + 1);
 assert.equal(lastPage.end, 624);
-assert.equal(lastPage.records.at(-1).id, matchingRecords.at(-1).id);
+assert.equal(lastPage.records.at(-1).id, pageFixture.at(-1).id);
 
-const clampedPage = app.paginateRecords(matchingRecords.slice(0, 81), 8, 80);
+const clampedPage = app.paginateRecords(pageFixture.slice(0, 81), 8, 80);
 assert.equal(clampedPage.currentPage, 2, "结果减少后页码应 clamp 到最后一页");
 assert.equal(clampedPage.records.length, 1);
 
@@ -107,7 +117,7 @@ assert.equal(emptyPage.records.length, 0);
 assert.equal(emptyPage.start, 0);
 assert.equal(emptyPage.end, 0);
 
-const allRecordsPage = app.paginateRecords(matchingRecords, 8, "all");
+const allRecordsPage = app.paginateRecords(pageFixture, 8, "all");
 assert.equal(allRecordsPage.currentPage, 1);
 assert.equal(allRecordsPage.totalPages, 1);
 assert.equal(allRecordsPage.records.length, 624);
@@ -119,12 +129,15 @@ assert.equal(app.setPageSize("all"), "all");
 assert.equal(app.state.currentPage, 1);
 assert.equal(app.setPageSize(160), 160);
 assert.equal(app.state.currentPage, 1, "从全部模式恢复分页后应从合法的第 1 页开始");
-assert.equal(app.paginateRecords(matchingRecords, app.state.currentPage, app.state.pageSize).totalPages, 4);
+assert.equal(
+  app.paginateRecords(pageFixture, app.state.currentPage, app.state.pageSize).totalPages,
+  app.calculatePageCount(624, 160),
+);
 
 app.state.currentPage = 8;
 assert.equal(app.setFilterValue("keyword", matchingRecords[0].companyName), true);
 assert.equal(app.state.currentPage, 1, "搜索变化后应回到第 1 页");
-assert.ok(app.getMatchingRecords().length < 624);
+assert.ok(app.getMatchingRecords().length < totalCount);
 
 app.state.currentPage = 4;
 app.setSortValue("deadline-desc");
@@ -149,7 +162,7 @@ const csvRows = app.makeCsv(exportRecords)
   .replace(/^\uFEFF/, "")
   .trimEnd()
   .split("\r\n");
-assert.equal(exportRecords.length, 624, "导出应忽略当前分页并保留全部筛选结果");
-assert.equal(csvRows.length, 625, "CSV 应包含表头及全部 624 条记录");
+assert.equal(exportRecords.length, totalCount, "导出应忽略当前分页并保留全部筛选结果");
+assert.equal(csvRows.length, totalCount + 1, "CSV 应包含表头及全部筛选结果");
 
 console.log("pagination tests passed");

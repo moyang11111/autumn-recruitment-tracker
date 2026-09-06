@@ -165,7 +165,7 @@ await assert.rejects(
   /广东城市/,
 );
 
-const unknownDeadline = { ...records[0], openDate: "", deadline: "" };
+const unknownDeadline = { ...records[1], id: "unknown-deadline-record", openDate: "", deadline: "" };
 assert.equal(app.deadlineState(unknownDeadline.deadline), "unknown");
 assert.equal(app.filterRecords([unknownDeadline], {
   keyword: "",
@@ -175,5 +175,15 @@ assert.equal(app.filterRecords([unknownDeadline], {
   deadline: "soon",
   status: "",
 }).length, 0);
+assert.equal(app.filterRecords([unknownDeadline], {
+  keyword: "",
+  nature: "",
+  province: "",
+  city: "",
+  deadline: "open",
+  status: "",
+}).length, 1, "“未截止”应包含截止日期待公布的岗位");
+assert.equal(app.matchesDeadlineFilter("2099-01-01", "open"), true);
+assert.equal(app.matchesDeadlineFilter("2020-01-01", "open"), false);
 
 console.log("city discovery tests passed");

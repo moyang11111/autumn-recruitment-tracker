@@ -46,14 +46,56 @@ assert.equal(exampleProvenanceText.kind, "示例数据");
 assert.equal(exampleProvenanceText.jobs, "同步岗位：0 · 示例岗位：5");
 assert.doesNotMatch(app.getDataNoteText(), /自动同步|实时|全量覆盖/);
 
-const frozenSnapshot = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "jobs.generated.json"), "utf8"));
+// 快照是随上游变化的数据文件，断言使用内联 fixture 而不是真实快照，
+// 避免上游增删岗位后测试失败并阻塞定时同步（见 workflows/sync-jobs.yml）。
+const sharedSyncUrl = "https://jobs.example.com/company-board/#/jobs";
+const frozenSnapshot = {
+  schemaVersion: 1,
+  generatedAt: "2026-09-01T07:30:00+08:00",
+  sources: [{ id: "fixture-source", name: "招聘同步示例源", status: "ok", recordCount: 3 }],
+  records: [
+    {
+      ...app.initialRecords[0],
+      id: "fixture-sync-shared-a",
+      companyName: "共享入口企业 A",
+      sourceId: "fixture-source",
+      sourceName: "招聘同步示例源",
+      sourceType: "community-json",
+      sourceKind: "sync",
+      isDemo: false,
+      campusUrl: sharedSyncUrl,
+    },
+    {
+      ...app.initialRecords[1],
+      id: "fixture-sync-shared-b",
+      companyName: "共享入口企业 B",
+      sourceId: "fixture-source",
+      sourceName: "招聘同步示例源",
+      sourceType: "community-json",
+      sourceKind: "sync",
+      isDemo: false,
+      campusUrl: sharedSyncUrl,
+    },
+    {
+      ...app.initialRecords[2],
+      id: "fixture-sync-unique",
+      companyName: "独立入口企业",
+      sourceId: "fixture-source",
+      sourceName: "招聘同步示例源",
+      sourceType: "community-json",
+      sourceKind: "sync",
+      isDemo: false,
+      campusUrl: "https://jobs.example.com/company-unique/#/position/1",
+    },
+  ],
+};
 const frozenSnapshotApp = loadApp({ payload: frozenSnapshot });
 const frozenSnapshotResolved = frozenSnapshotApp.resolveRecruitmentData(frozenSnapshot);
-assert.equal(frozenSnapshotResolved.syncRecords.length, 619, "冻结快照规范化后应保留 619 条同步岗位");
+assert.equal(frozenSnapshotResolved.syncRecords.length, 3, "冻结 fixture 规范化后应保留全部同步岗位");
 assert.equal(
   frozenSnapshotResolved.records.filter((record) => record.sourceKind === "sync").length,
-  619,
-  "历史为空时当前同步岗位不得因 URL 合并从 619 条减少",
+  3,
+  "历史为空时共享 URL 的当前同步岗位不得因 URL 合并而减少",
 );
 
 const terminalInference = app.inferStatusFromNotice("恭喜获得 offer，但我决定拒绝 offer，感谢理解。");

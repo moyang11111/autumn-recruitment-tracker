@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-05T10:36:39.306Z",
+  "generatedAt": "2026-09-06T02:22:01.257Z",
   "sources": [
     {
       "id": "community-xiaozhao-radar",
       "name": "校招雷达社区聚合（投递前核验）",
       "type": "community-json",
       "status": "ok",
-      "lastCheckedAt": "2026-09-05T10:36:39.306Z",
+      "lastCheckedAt": "2026-09-06T02:22:01.257Z",
       "recordCount": 139,
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z"
     },
@@ -16,7 +16,7 @@
       "name": "Airbnb Careers（Greenhouse）",
       "type": "greenhouse",
       "status": "ok",
-      "lastCheckedAt": "2026-09-05T10:36:39.306Z",
+      "lastCheckedAt": "2026-09-06T02:22:01.257Z",
       "recordCount": 0,
       "sourceUpdatedAt": "2026-09-04T00:51:30.000Z"
     },
@@ -25,7 +25,7 @@
       "name": "Palantir Careers（Lever）",
       "type": "lever",
       "status": "ok",
-      "lastCheckedAt": "2026-09-05T10:36:39.306Z",
+      "lastCheckedAt": "2026-09-06T02:22:01.257Z",
       "recordCount": 0
     }
   ],
@@ -39,7 +39,7 @@
       "province": "广东",
       "city": "广州",
       "jobCategories": [
-        "鲸英领袖生  ：硕士及以上学历（2027届/2026 届应届毕业生） 专业不限  农学  经营类相关专业",
+        "鲸英领袖生  ：硕士及以上学历（2027届/2026 届应届毕业生） 专业不限  农学  经营类…",
         "农业食品",
         "批次:27届提前批"
       ],
@@ -48,7 +48,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -71,7 +71,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -94,7 +94,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -117,7 +117,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -133,14 +133,14 @@
       "jobCategories": [
         "互联网科技",
         "批次:27届暑期实习",
-        "数据分析实习生  AI应用工程实习生 （智能体方向 ）量化实习生  测试实习生  平面设计实习生 产品经理实习生（AI智能体/金融科技方向）数据运营实习生"
+        "数据分析实习生  AI应用工程实习生 （智能体方向 ）量化实习生  测试实习生  平面设计实习生…"
       ],
       "campusUrl": "https://github.com/jiabaobei/xiaozhao-radar",
       "sourceId": "community-xiaozhao-radar",
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -163,7 +163,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -186,7 +186,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -200,7 +200,7 @@
       "province": "广东",
       "city": "广州",
       "jobCategories": [
-        "后端工程师  前端工程师 算法工程师  AI编程工程师 救育测量研究员学科盒题研究助理  试题量化研究员  入校技术服务助理",
+        "后端工程师  前端工程师 算法工程师  AI编程工程师 救育测量研究员学科盒题研究助理  试题量…",
         "批次:27届暑期实习",
         "综合"
       ],
@@ -209,7 +209,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -217,14 +217,14 @@
     {
       "id": "sync-community-xiaozhao-radar-ai-https-hr.gdtel.com.cn-portal-recruit-more-67-27-ai-211d18b6260f",
       "companyName": "中国电信广东公司",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
-      "deadline": "2026-11-15",
+      "deadline": "2026-11-14",
       "province": "广东",
       "city": "深圳",
       "jobCategories": [
         "批次:27届秋招正式批",
-        "研发工程师 大数据和 AI工程师 网信安全工程师 智能云网工程师 动力环境工程师 无线网络工程师 解决方案经理 项目交付工程师 政企客户经理 财务岗位  法律岗",
+        "研发工程师 大数据和 AI工程师 网信安全工程师 智能云网工程师 动力环境工程师 无线网络工程师…",
         "综合"
       ],
       "campusUrl": "https://hr.gdtel.com.cn/portal/recruit/more/67",
@@ -232,7 +232,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -240,14 +240,14 @@
     {
       "id": "sync-community-xiaozhao-radar-ai-https-hr.gdtel.com.cn-portal-recruit-more-67-27-ai-9298dfac4d8f",
       "companyName": "中国电信广东公司",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
-      "deadline": "2026-11-15",
+      "deadline": "2026-11-14",
       "province": "广东",
       "city": "东莞",
       "jobCategories": [
         "批次:27届秋招正式批",
-        "研发工程师 大数据和 AI工程师 网信安全工程师 智能云网工程师 动力环境工程师 无线网络工程师 解决方案经理 项目交付工程师 政企客户经理 财务岗位  法律岗",
+        "研发工程师 大数据和 AI工程师 网信安全工程师 智能云网工程师 动力环境工程师 无线网络工程师…",
         "综合"
       ],
       "campusUrl": "https://hr.gdtel.com.cn/portal/recruit/more/67",
@@ -255,7 +255,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -263,14 +263,14 @@
     {
       "id": "sync-community-xiaozhao-radar-ai-https-hr.gdtel.com.cn-portal-recruit-more-67-27-ai-a79d15a34505",
       "companyName": "中国电信广东公司",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
-      "deadline": "2026-11-15",
+      "deadline": "2026-11-14",
       "province": "广东",
       "city": "佛山",
       "jobCategories": [
         "批次:27届秋招正式批",
-        "研发工程师 大数据和 AI工程师 网信安全工程师 智能云网工程师 动力环境工程师 无线网络工程师 解决方案经理 项目交付工程师 政企客户经理 财务岗位  法律岗",
+        "研发工程师 大数据和 AI工程师 网信安全工程师 智能云网工程师 动力环境工程师 无线网络工程师…",
         "综合"
       ],
       "campusUrl": "https://hr.gdtel.com.cn/portal/recruit/more/67",
@@ -278,7 +278,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -286,14 +286,14 @@
     {
       "id": "sync-community-xiaozhao-radar-ai-https-hr.gdtel.com.cn-portal-recruit-more-67-27-ai-c11f21800bee",
       "companyName": "中国电信广东公司",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
-      "deadline": "2026-11-15",
+      "deadline": "2026-11-14",
       "province": "广东",
       "city": "广州",
       "jobCategories": [
         "批次:27届秋招正式批",
-        "研发工程师 大数据和 AI工程师 网信安全工程师 智能云网工程师 动力环境工程师 无线网络工程师 解决方案经理 项目交付工程师 政企客户经理 财务岗位  法律岗",
+        "研发工程师 大数据和 AI工程师 网信安全工程师 智能云网工程师 动力环境工程师 无线网络工程师…",
         "综合"
       ],
       "campusUrl": "https://hr.gdtel.com.cn/portal/recruit/more/67",
@@ -301,7 +301,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -309,7 +309,7 @@
     {
       "id": "sync-community-xiaozhao-radar-ai-https-is35svcbne.jobs.feishu.cn-youcash-position-list-keywords-category-locat-a12cc7739c36",
       "companyName": "中邮消费金融",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -324,7 +324,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -347,7 +347,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -362,7 +362,7 @@
       "city": "深圳",
       "jobCategories": [
         "批次:日常实习",
-        "医学产品实习生 算法实习生 用户洞察实习生 国内电商运营实习生 国内营销实习生  招聘实习生 雇主品牌设计实习生 AI法务实习生 财务实习生",
+        "医学产品实习生 算法实习生 用户洞察实习生 国内电商运营实习生 国内营销实习生  招聘实习生 雇…",
         "装备重工"
       ],
       "campusUrl": "https://nzx0bhokwn.jobs.feishu.cn/266184/position/list",
@@ -370,7 +370,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -385,7 +385,7 @@
       "city": "东莞",
       "jobCategories": [
         "批次:日常实习",
-        "医学产品实习生 算法实习生 用户洞察实习生 国内电商运营实习生 国内营销实习生  招聘实习生 雇主品牌设计实习生 AI法务实习生 财务实习生",
+        "医学产品实习生 算法实习生 用户洞察实习生 国内电商运营实习生 国内营销实习生  招聘实习生 雇…",
         "装备重工"
       ],
       "campusUrl": "https://nzx0bhokwn.jobs.feishu.cn/266184/position/list",
@@ -393,7 +393,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -416,7 +416,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -432,14 +432,14 @@
       "jobCategories": [
         "批次:27届暑期实习",
         "综合",
-        "AI产品实习生  多模态算法实习生  内容运营实习生  广告投放实习生  视频 剪辑实习生  品面设计实习生  社群运营实习生 直播运营实习生 中台支持实习生（"
+        "AI产品实习生  多模态算法实习生  内容运营实习生  广告投放实习生  视频 剪辑实习生  品…"
       ],
       "campusUrl": "https://xingqudao.zhiye.com/intern/jobs?memory=%7B%7D&silence=1&sessionid=",
       "sourceId": "community-xiaozhao-radar",
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -454,7 +454,7 @@
       "city": "东莞",
       "jobCategories": [
         "批次:27届暑期实习",
-        "算法类 AI&软件类  产品&测试类  机械结构类  自动化类 硬件类  财务类 人事行政类  供应链类  项目管理类  销售支持类",
+        "算法类 AI&软件类  产品&测试类  机械结构类  自动化类 硬件类  财务类 人事行政类  …",
         "装备重工"
       ],
       "campusUrl": "https://zhaopin.xa.com/campus/jobs",
@@ -462,7 +462,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -470,14 +470,14 @@
     {
       "id": "sync-community-xiaozhao-radar-ai-java-https-app.mokahr.com-campus-recruitment-grgbanking-39448-sessionid-jobs--00fe70ba16a0",
       "companyName": "广电运营集团",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
       "city": "广州",
       "jobCategories": [
         "批次:27届暑期实习",
-        "实习生(AI智能体开发)产品经理实习生  (医疗方向)java开发实习 生产品助理实习生  (云平台)医疗数据质控实习生  机器人算法实习生 算法开发实习生 (",
+        "实习生(AI智能体开发)产品经理实习生  (医疗方向)java开发实习 生产品助理实习生  (云…",
         "综合"
       ],
       "campusUrl": "https://app.mokahr.com/campus-recruitment/grgbanking/39448?sessionid=#/jobs?zhineng%5B0%5D=150841&keyword=&page=1&anchorName=jobsList",
@@ -485,7 +485,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -499,7 +499,7 @@
       "province": "广东",
       "city": "深圳",
       "jobCategories": [
-        "模型架构创新  模型芯片联合创新  AI芯片项目经理  NPU 架构 & 建模  AI芯片模拟器  模型部署分析  LLVM  QEMU AI 算子生成  AI",
+        "模型架构创新  模型芯片联合创新  AI芯片项目经理  NPU 架构 & 建模  AI芯片模拟器…",
         "批次:27届暑期实习",
         "装备重工"
       ],
@@ -508,7 +508,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -516,7 +516,7 @@
     {
       "id": "sync-community-xiaozhao-radar-aigc-https-is35svcbne.jobs.feishu.cn-youcash-position-list-keywords-category-loc-a55314deb72d",
       "companyName": "中邮消费金融",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -531,7 +531,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -545,7 +545,7 @@
       "province": "广东",
       "city": "深圳",
       "jobCategories": [
-        "工艺研发工程师、工艺整合研发工程师、分析技术工程师、硬件系统整合工程师、半导体工艺工程师、工艺整合工程师、良率工程师、生产管理工程师、生产系统开发工程师、AMH",
+        "工艺研发工程师、工艺整合研发工程师、分析技术工程师、硬件系统整合工程师、半导体工艺工程师、工艺整…",
         "批次:27届秋招正式批",
         "装备重工"
       ],
@@ -554,7 +554,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -564,7 +564,7 @@
       "companyName": "BrainCo强脑科技",
       "companyType": "其他",
       "openDate": "",
-      "deadline": "2026-12-31",
+      "deadline": "2026-12-30",
       "province": "广东",
       "city": "深圳",
       "jobCategories": [
@@ -577,7 +577,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -593,14 +593,14 @@
       "jobCategories": [
         "互联网科技",
         "批次:27届暑期实习",
-        "AI产品交互实习生 小程序开发AI应用方向  视频剪辑实习生  内容商务实习生 用户测试调研实习生"
+        "AI产品交互实习生 小程序开发AI应用方向  视频剪辑实习生  内容商务实习生 用户测试调研实习…"
       ],
       "campusUrl": "https://github.com/jiabaobei/xiaozhao-radar",
       "sourceId": "community-xiaozhao-radar",
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -623,7 +623,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -638,7 +638,7 @@
       "city": "广州",
       "jobCategories": [
         "批次:27届提前批",
-        "雅思托福教师  国际青少教师  国际学科教师  国际备考教师(数学)菁英班课教师(英语)  DSE教师(英文写作)",
+        "雅思托福教师  国际青少教师  国际学科教师  国际备考教师(数学)菁英班课教师(英语)  DS…",
         "综合"
       ],
       "campusUrl": "https://zhaopin.xdf.cn/jobs?activityGuid=a43b35a9-bcb4-4138-a078-c2e9e32acfcd",
@@ -646,7 +646,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -669,7 +669,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -684,7 +684,7 @@
       "city": "深圳",
       "jobCategories": [
         "批次:27届秋招正式批",
-        "助理模拟设计工程师助理  芯片验证工程师  芯片测试工程师  助理FAE  销售工程师   职能管培生",
+        "助理模拟设计工程师助理  芯片验证工程师  芯片测试工程师  助理FAE  销售工程师   职能…",
         "装备重工"
       ],
       "campusUrl": "https://app.mokahr.com/campus-recruitment/lowpowersemi/168412?locale=zh-CN#/",
@@ -692,7 +692,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -700,7 +700,7 @@
     {
       "id": "sync-community-xiaozhao-radar-gmt-https-app.mokahr.com-campus-recruitment-huolalahr-98660-sourcetoken-832309c8-1eb90f451724",
       "companyName": "货拉拉全球拓展管培生",
-      "companyType": "其他",
+      "companyType": "私企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -715,7 +715,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -738,7 +738,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -761,7 +761,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -784,7 +784,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -807,7 +807,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -830,7 +830,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -840,7 +840,7 @@
       "companyName": "超参数科技",
       "companyType": "其他",
       "openDate": "",
-      "deadline": "2026-09-30",
+      "deadline": "2026-09-29",
       "province": "广东",
       "city": "深圳",
       "jobCategories": [
@@ -853,7 +853,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -876,7 +876,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -884,7 +884,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-app.mokahr.com-m-campus_apply-37-58016-recommendcode-dswqheae-hash-23-2fjo-eec0721086f6",
       "companyName": "三七互娱",
-      "companyType": "其他",
+      "companyType": "私企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -899,7 +899,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -922,7 +922,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -945,7 +945,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -968,7 +968,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -991,7 +991,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1014,7 +1014,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1037,7 +1037,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1060,7 +1060,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1083,7 +1083,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1091,7 +1091,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-careers.citics.com-branch-interns-27-1a2f3dece592",
       "companyName": "中信证劵南华",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -1106,7 +1106,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1114,7 +1114,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-careers.citics.com-branch-interns-27-d9922756dcb5",
       "companyName": "中信证劵南华",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -1129,7 +1129,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1137,7 +1137,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-careers.citics.com-branch-interns-27-dff5fd73027c",
       "companyName": "中信证劵南华",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -1152,7 +1152,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1175,7 +1175,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1198,7 +1198,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1206,7 +1206,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-github.com-jiabaobei-xiaozhao-radar-27-10dec6fbf7a8",
       "companyName": "工信部电子无所",
-      "companyType": "其他",
+      "companyType": "事业单位",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -1221,7 +1221,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1244,7 +1244,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1258,7 +1258,7 @@
       "province": "广东",
       "city": "佛山",
       "jobCategories": [
-        "个人客户尽职调查部实习生 汇款营运部实习生 企业客户尽职调查部实习生 企业客户及账户服务部实习生 信贷风险管理运营部实习生 回款运营部 实习生 信贷风险管理运营",
+        "个人客户尽职调查部实习生 汇款营运部实习生 企业客户尽职调查部实习生 企业客户及账户服务部实习生…",
         "批次:27届暑期实习",
         "综合"
       ],
@@ -1267,7 +1267,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1290,7 +1290,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1298,7 +1298,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-github.com-jiabaobei-xiaozhao-radar-27-34d5191cfd53",
       "companyName": "南方报业",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -1313,7 +1313,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1336,7 +1336,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1359,7 +1359,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1367,7 +1367,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-github.com-jiabaobei-xiaozhao-radar-27-4a16b85a093c",
       "companyName": "南方报业",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -1382,7 +1382,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1390,7 +1390,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-github.com-jiabaobei-xiaozhao-radar-27-636a28c9c824",
       "companyName": "广药大药房",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -1405,7 +1405,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1413,7 +1413,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-github.com-jiabaobei-xiaozhao-radar-27-64f6b5a1349b",
       "companyName": "广药大药房",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -1428,7 +1428,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1443,7 +1443,7 @@
       "city": "广州",
       "jobCategories": [
         "批次:27届暑期实习",
-        "新媒体运营实习生（招聘-雇主品牌方向） 人力实习生-培训  人力实习生-招聘  学管实习生 助教（少儿/初中/高中）",
+        "新媒体运营实习生（招聘-雇主品牌方向） 人力实习生-培训  人力实习生-招聘  学管实习生 助教…",
         "综合"
       ],
       "campusUrl": "https://github.com/jiabaobei/xiaozhao-radar",
@@ -1451,7 +1451,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1474,7 +1474,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1482,7 +1482,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-github.com-jiabaobei-xiaozhao-radar-27-ab9fea789909",
       "companyName": "南方报业",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -1497,7 +1497,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1505,7 +1505,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-github.com-jiabaobei-xiaozhao-radar-27-be640d2222ae",
       "companyName": "南方报业",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -1520,7 +1520,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1543,7 +1543,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1566,7 +1566,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1574,7 +1574,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-github.com-jiabaobei-xiaozhao-radar-27-cc16b4d864d4",
       "companyName": "广药大药房",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -1589,7 +1589,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1612,7 +1612,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1635,7 +1635,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1658,7 +1658,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1672,7 +1672,7 @@
       "province": "广东",
       "city": "广州",
       "jobCategories": [
-        "个人客户尽职调查部实习生 汇款营运部实习生 企业客户尽职调查部实习生 企业客户及账户服务部实习生 信贷风险管理运营部实习生 回款运营部 实习生 信贷风险管理运营",
+        "个人客户尽职调查部实习生 汇款营运部实习生 企业客户尽职调查部实习生 企业客户及账户服务部实习生…",
         "批次:27届暑期实习",
         "综合"
       ],
@@ -1681,7 +1681,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1704,7 +1704,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1720,14 +1720,14 @@
       "jobCategories": [
         "能源电力",
         "批次:27届秋招正式批",
-        "嵌入式软件工程师  储能优化策略算法工程师  硬件工程师  架构工程师  软件算法工程师  算法工程师   电力电子高级研究员"
+        "嵌入式软件工程师  储能优化策略算法工程师  硬件工程师  架构工程师  软件算法工程师  算法…"
       ],
       "campusUrl": "https://github.com/jiabaobei/xiaozhao-radar",
       "sourceId": "community-xiaozhao-radar",
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1741,7 +1741,7 @@
       "province": "广东",
       "city": "深圳",
       "jobCategories": [
-        "国际销售实习生  国际市场实习生 国际产品实习生  国际用服实习生  （海外技术支持）国际商务实习生（商务运营/订单管理）",
+        "国际销售实习生  国际市场实习生 国际产品实习生  国际用服实习生  （海外技术支持）国际商务实…",
         "批次:27届暑期实习",
         "医药医疗"
       ],
@@ -1750,7 +1750,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1765,7 +1765,7 @@
       "city": "深圳",
       "jobCategories": [
         "批次:27届秋招正式批",
-        "研发工程师 (电气工程方向 )研发工程师(磁性材料方向) 工艺工程师 助理工程师 海外技术支持工程师 东南亚运营支吃专员  市场专员  财务专员",
+        "研发工程师 (电气工程方向 )研发工程师(磁性材料方向) 工艺工程师 助理工程师 海外技术支持工…",
         "装备重工"
       ],
       "campusUrl": "https://github.com/jiabaobei/xiaozhao-radar",
@@ -1773,7 +1773,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1796,7 +1796,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1819,7 +1819,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1842,7 +1842,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1865,7 +1865,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1888,7 +1888,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1911,7 +1911,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1934,7 +1934,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1942,7 +1942,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-job.ycwb.com.cn-ycwb-selectyourchannel-4abe6e947e19",
       "companyName": "羊晚集团",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -1957,7 +1957,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -1980,7 +1980,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2003,7 +2003,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2026,7 +2026,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2049,7 +2049,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2072,7 +2072,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2080,7 +2080,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-join.tencentmusic.com-campus-post-type-40-27-06fab5e88cad",
       "companyName": "腾讯音乐娱乐集团—技术大咖计划",
-      "companyType": "其他",
+      "companyType": "私企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -2095,7 +2095,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2118,7 +2118,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2141,7 +2141,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2149,7 +2149,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-lngzl.zhiye.com-intern-jobs-27-46576ab9da73",
       "companyName": "广之旅",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -2164,7 +2164,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2187,7 +2187,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2210,7 +2210,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2233,7 +2233,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2247,7 +2247,7 @@
       "province": "广东",
       "city": "深圳",
       "jobCategories": [
-        "结构工程师  电子工程师  软件工程师  视频剪辑  付费推广  渠道销售  文案策划  客服专员",
+        "结构工程师  电子工程师  软件工程师  视频剪辑  付费推广  渠道销售  文案策划  客服专…",
         "批次:27届暑期实习",
         "装备重工"
       ],
@@ -2256,7 +2256,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2279,7 +2279,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2287,7 +2287,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-psbcgdsx.zhaopin.com-post-index.html-27-08b835dd92f9",
       "companyName": "中国邮政储蓄银行广州省分行",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -2302,7 +2302,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2310,7 +2310,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-psbcgdsx.zhaopin.com-post-index.html-27-1d6d845318a1",
       "companyName": "中国邮政储蓄银行广州省分行",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -2325,7 +2325,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2333,7 +2333,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-psbcgdsx.zhaopin.com-post-index.html-27-fc6911baa710",
       "companyName": "中国邮政储蓄银行广州省分行",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -2348,7 +2348,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2371,7 +2371,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2394,7 +2394,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2417,7 +2417,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2440,7 +2440,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2454,7 +2454,7 @@
       "province": "广东",
       "city": "东莞",
       "jobCategories": [
-        "工艺研发工程师  光学工程师  新媒体运营  机器视觉工程师  软件工程师  销售管培生  机械研发工程师  采购管培生  激光工艺工程师   电气工程师  海",
+        "工艺研发工程师  光学工程师  新媒体运营  机器视觉工程师  软件工程师  销售管培生  机械…",
         "批次:27届秋招正式批",
         "装备重工"
       ],
@@ -2463,7 +2463,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2471,14 +2471,14 @@
     {
       "id": "sync-community-xiaozhao-radar-https-szgas2.zhiye.com-intern-detail-jobadid-f84bd47b-a2bc-4c40-9364-dea8933dc8f-aabffb7e7f96",
       "companyName": "深圳燃气",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
       "city": "深圳",
       "jobCategories": [
         "批次:27届暑期实习",
-        "燃气运营类 综合能源类 (电力方向)安全管理类  工程管理类 信息技术类 财务管理类  投资经济类",
+        "燃气运营类 综合能源类 (电力方向)安全管理类  工程管理类 信息技术类 财务管理类  投资经济…",
         "综合"
       ],
       "campusUrl": "https://szgas2.zhiye.com/intern/detail?jobAdId=f84bd47b-a2bc-4c40-9364-dea8933dc8f9",
@@ -2486,7 +2486,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2502,14 +2502,14 @@
       "jobCategories": [
         "互联网科技",
         "批次:27届秋招正式批",
-        "平台电商运营  直播运营  内容运营  渠道运营  海外运营   市场推广  产品经理  短视频编导  财务管理"
+        "平台电商运营  直播运营  内容运营  渠道运营  海外运营   市场推广  产品经理  短视频…"
       ],
       "campusUrl": "https://tianzhulingshan.jobs.feishu.cn/267335/position/list?spread=7M49SW8",
       "sourceId": "community-xiaozhao-radar",
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2532,7 +2532,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2555,7 +2555,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2578,7 +2578,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2601,7 +2601,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2609,7 +2609,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-wecruit.hotjob.cn-su638d61cd0dcad444a273670c-pb-interns.html-27-08a8e04d5687",
       "companyName": "华润银行",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -2624,7 +2624,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2632,7 +2632,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-wecruit.hotjob.cn-su638d61cd0dcad444a273670c-pb-interns.html-27-86ec45088b11",
       "companyName": "华润银行",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -2647,7 +2647,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2655,7 +2655,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-wecruit.hotjob.cn-su638d61cd0dcad444a273670c-pb-interns.html-27-b1ad2cce458d",
       "companyName": "华润银行",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -2670,7 +2670,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2678,7 +2678,7 @@
     {
       "id": "sync-community-xiaozhao-radar-https-wecruit.hotjob.cn-su638d61cd0dcad444a273670c-pb-interns.html-27-c2fb47892251",
       "companyName": "华润银行",
-      "companyType": "其他",
+      "companyType": "央国企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
@@ -2693,7 +2693,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2716,7 +2716,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2739,7 +2739,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2749,11 +2749,11 @@
       "companyName": "卧安机器人",
       "companyType": "其他",
       "openDate": "",
-      "deadline": "2026-11-30",
+      "deadline": "2026-11-29",
       "province": "广东",
       "city": "深圳",
       "jobCategories": [
-        "技术类：算法实习生、结构实习生、嵌入式实习生、软件测试实习生 市场类：海外市场实习生、市场营销实习生",
+        "技术类：算法实习生、结构实习生、嵌入式实习生、软件测试实习生 市场类：海外市场实习生、市场营销实…",
         "批次:27届秋招正式批",
         "综合"
       ],
@@ -2762,7 +2762,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2785,7 +2785,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2808,7 +2808,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2831,7 +2831,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2854,7 +2854,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2877,7 +2877,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2900,7 +2900,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2923,7 +2923,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2933,7 +2933,7 @@
       "companyName": "影石Insta360",
       "companyType": "其他",
       "openDate": "",
-      "deadline": "2026-10-31",
+      "deadline": "2026-10-30",
       "province": "广东",
       "city": "深圳",
       "jobCategories": [
@@ -2946,7 +2946,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2969,7 +2969,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -2992,7 +2992,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -3015,7 +3015,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -3038,7 +3038,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -3061,7 +3061,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -3075,7 +3075,7 @@
       "province": "广东",
       "city": "东莞",
       "jobCategories": [
-        "产品结构工程类  电子研发测试类  外语项目管理类 芯片/PCBA研发工程类 智能制造类 质量管理类 运营支持类",
+        "产品结构工程类  电子研发测试类  外语项目管理类 芯片/PCBA研发工程类 智能制造类 质量管…",
         "能源电力",
         "批次:27届暑期实习"
       ],
@@ -3084,7 +3084,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -3098,7 +3098,7 @@
       "province": "广东",
       "city": "东莞",
       "jobCategories": [
-        "电子研发测试类  产品结构工程类  外语项目管理类  质量管理类  制造技术研发类  运营支持类 芯片/PCBA工程类",
+        "电子研发测试类  产品结构工程类  外语项目管理类  质量管理类  制造技术研发类  运营支持类…",
         "能源电力",
         "批次:27届秋招正式批"
       ],
@@ -3107,7 +3107,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -3130,7 +3130,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -3153,7 +3153,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -3169,14 +3169,14 @@
       "jobCategories": [
         "互联网科技",
         "批次:27届暑期实习",
-        "三维重建 SLAM 深度学习 算法实习生 高性能计算实习生 机器人算法实习生 嵌入式实习生机械结构实习生"
+        "三维重建 SLAM 深度学习 算法实习生 高性能计算实习生 机器人算法实习生 嵌入式实习生机械结…"
       ],
       "campusUrl": "https://pecivkvtit.jobs.feishu.cn/252342/?keywords=&category=&location=&project=7535043993341888787&type=&job_hot_flag=&current=1&limit=10&functionCategory=&tag=",
       "sourceId": "community-xiaozhao-radar",
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -3184,14 +3184,14 @@
     {
       "id": "sync-community-xiaozhao-radar-vivo-pcba-te-https-github.com-jiabaobei-xiaozhao-radar-27-pcba-te-64d1f7ff92ea",
       "companyName": "Vivo—物流与制造领域专场",
-      "companyType": "其他",
+      "companyType": "私企",
       "openDate": "",
       "deadline": "",
       "province": "广东",
       "city": "东莞",
       "jobCategories": [
         "批次:27届暑期实习",
-        "物料计划经理 软件工程师（智能制造方向）结构工程师（智能制造方向）工艺工程师（PCBA方向）电子工程师（智能制造方向）测试开发工程师（智能制造方向）TE工程师",
+        "物料计划经理 软件工程师（智能制造方向）结构工程师（智能制造方向）工艺工程师（PCBA方向）电子…",
         "装备重工"
       ],
       "campusUrl": "https://github.com/jiabaobei/xiaozhao-radar",
@@ -3199,7 +3199,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false
@@ -3214,7 +3214,7 @@
       "city": "深圳",
       "jobCategories": [
         "批次:27届暑期实习",
-        "算法实习生(VLA、VLN、世界模型、数据)规划导航控制算法实习生数据标注实习生 AI产品实习生市场营销实习生(日语/德语)人力资源实习生(招聘方向）",
+        "算法实习生(VLA、VLN、世界模型、数据)规划导航控制算法实习生数据标注实习生 AI产品实习生…",
         "装备重工"
       ],
       "campusUrl": "https://woanhome.zhiye.com/intern/jobs?memory=%7B%7D&silence=1",
@@ -3222,7 +3222,7 @@
       "sourceName": "校招雷达社区聚合（投递前核验）",
       "sourceType": "community-json",
       "sourceUpdatedAt": "2026-09-03T00:00:00.000Z",
-      "fetchedAt": "2026-09-05T10:36:39.306Z",
+      "fetchedAt": "2026-09-06T02:22:01.257Z",
       "status": "未投递",
       "statusUpdatedAt": "1970-01-01T00:00:00.000Z",
       "isDemo": false

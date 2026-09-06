@@ -770,6 +770,17 @@ function normalizeRecordState(previousRecord, now) {
   return { status, statusUpdatedAt };
 }
 
+// 上游社区源会把整段岗位描述塞进类别字段，超长标签会在表格里
+// 渲染成多行大块。类别只做展示引导，完整信息以校招链接为准，
+// 这里统一截断，并保持 cleanList 的去重与排序行为。
+const MAX_JOB_CATEGORY_LENGTH = 48;
+
+function capCategoryText(value) {
+  const cleaned = text(value);
+  if (cleaned.length <= MAX_JOB_CATEGORY_LENGTH) return cleaned;
+  return `${cleaned.slice(0, MAX_JOB_CATEGORY_LENGTH)}…`;
+}
+
 function buildRecord({
   id,
   companyName,
@@ -797,7 +808,7 @@ function buildRecord({
     deadline: normalizeDateOnly(deadline),
     province: text(province),
     city: text(city),
-    jobCategories: cleanList([jobCategories ?? []]),
+    jobCategories: cleanList([jobCategories ?? []].flat(Infinity).map(capCategoryText)),
     campusUrl: safeUrl(campusUrl),
     sourceId: text(sourceId),
     sourceName: text(sourceName),
@@ -844,13 +855,50 @@ function communityStateKey(source, record, candidateUrl) {
   return `record-id:${source.id}\u0000${record.id}`;
 }
 
-function communityCompanyType(job, fallback) {
+// 上游社区源基本不提供企业性质字段，这里按企业名做保守推断：
+// 只收录高置信度模式（央企/省属国企/公用事业/头部民企），
+// 拿不准的一律留在 fallback（“其他”），避免给求职者错误的性质信号。
+const COMMUNITY_COMPANY_NAME_TYPE_RULES = Object.freeze([
+  {
+    type: "事业单位",
+    patterns: [
+      /工信部|工业和信息化部/,
+    ],
+  },
+  {
+    type: "央国企",
+    patterns: [
+      /^中国(?!平安)/,
+      /^国家/,
+      /^中(?:核|广|航|船|车|铁|建|交|冶|粮|储|电|化|煤|工|材|汽|邮|信|油|海|免|检|青)/,
+      /^(?:华润|招商|光大|保利|东风|华能|华电|大唐|越秀|广汽|广药|广新|广晟|广业|广物|广弘|粤海|粤电|广之旅|岭南集团|广州地铁|广州港|广州建筑|广州酒家|珠江钢琴|深圳地铁|深圳能源|深圳机场|深圳燃气|深投控|深业|特发|盐田港|南方报业|羊晚|羊城晚报)/,
+      /电网|烟草|地铁|机场|港口|公交|水务|广电/,
+    ],
+  },
+  {
+    type: "私企",
+    patterns: [
+      /腾讯|华为|比亚迪|网易|字节跳动|美团|京东|小米|OPPO|vivo|大疆|荣耀|顺丰|美的|TCL|创维|货拉拉|三七互娱/i,
+    ],
+  },
+]);
+
+function inferCompanyTypeFromName(companyName) {
+  const name = text(companyName);
+  if (!name) return "";
+  for (const rule of COMMUNITY_COMPANY_NAME_TYPE_RULES) {
+    if (rule.patterns.some((pattern) => pattern.test(name))) return rule.type;
+  }
+  return "";
+}
+
+function communityCompanyType(job, companyName, fallback) {
   const marker = text(firstValue(job?.companyType, job?.ownership, job?.t));
   if (/央企|国企|国有企业/.test(marker)) return "央国企";
   if (/外企|外资/.test(marker)) return "外企";
   if (/事业单位|高校|研究所/.test(marker)) return "事业单位";
   if (/私企|民企|民营/.test(marker)) return "私企";
-  return fallback;
+  return inferCompanyTypeFromName(companyName) || fallback;
 }
 
 function normalizeJobAtLocation(job, source, now, location) {
@@ -863,7 +911,7 @@ function normalizeJobAtLocation(job, source, now, location) {
     ? text(firstValue(rawCompanyName, source.companyName))
     : source.companyName;
   const companyType = source.type === "community-json"
-    ? communityCompanyType(raw, source.companyType)
+    ? communityCompanyType(raw, companyName, source.companyType)
     : source.companyType;
   const meaningfulJob = rawJobId(raw) !== undefined || text(candidateUrl) || text(title)
     || (source.type !== "community-json" && companyName);

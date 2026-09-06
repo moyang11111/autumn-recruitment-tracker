@@ -1130,6 +1130,14 @@
     return "open";
   }
 
+  function matchesDeadlineFilter(deadline, filterValue, baseDate = todayKey()) {
+    const state = deadlineState(deadline, baseDate);
+    // “待公布”的岗位并没有截止，必须留在“未截止”视图里，否则缺日期的
+    // 同步岗位会全部从“仅看未截止”中消失。
+    if (filterValue === "open") return state === "open" || state === "unknown";
+    return state === filterValue;
+  }
+
   function formatDate(value) {
     if (!isDateOnly(value)) return "待公布";
     return value.replace(/-/g, ".");
@@ -1308,7 +1316,7 @@
     if (filters.province && record.province !== filters.province) return false;
     if (filters.city && record.city !== filters.city) return false;
     if (filters.status && record.status !== filters.status) return false;
-    if (filters.deadline && deadlineState(record.deadline) !== filters.deadline) return false;
+    if (filters.deadline && !matchesDeadlineFilter(record.deadline, filters.deadline)) return false;
     return true;
   }
 
@@ -1467,7 +1475,7 @@
 
   function renderCategories(record) {
     const categories = Array.isArray(record.categories) ? record.categories : [];
-    return `<div class="category-list" aria-label="岗位方向">${categories.map((category) => `<span class="category-tag">${escapeHtml(category)}</span>`).join("")}</div>`;
+    return `<div class="category-list" aria-label="岗位方向">${categories.map((category) => `<span class="category-tag" title="${escapeHtml(category)}">${escapeHtml(category)}</span>`).join("")}</div>`;
   }
 
   function renderLocation(record) {
@@ -2262,6 +2270,7 @@
     fetchLatestRecruitmentPayload,
     requestCityRecruitment,
     deadlineState,
+    matchesDeadlineFilter,
     formatDate,
     formatSyncTime,
     recordMatchesFilters,

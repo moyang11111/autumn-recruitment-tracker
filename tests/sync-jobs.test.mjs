@@ -330,6 +330,54 @@ test("社区聚合源会拆分多城市岗位并保留来源更新时间", async
   assert.equal(payload.sources[0].stale, true, "成功抓取但上游更新时间超过阈值时应标记 stale");
 });
 
+test("社区聚合源按企业名保守推断企业性质，marker 字段优先", () => {
+  const cases = [
+    { c: "中国电信广东公司", p: "客户经理", expected: "央国企" },
+    { c: "中国邮政储蓄银行广州省分行", p: "柜员", expected: "央国企" },
+    { c: "中信证劵南华", p: "投顾", expected: "央国企" },
+    { c: "华润银行", p: "管培生", expected: "央国企" },
+    { c: "深圳燃气", p: "运营岗", expected: "央国企" },
+    { c: "广州地铁", p: "站务员", expected: "央国企" },
+    { c: "工信部电子五所", p: "科研助理", expected: "事业单位" },
+    { c: "腾讯音乐娱乐集团", p: "测试开发", expected: "私企" },
+    { c: "Vivo—物流与制造领域专场", p: "制造工程师", expected: "私企" },
+    { c: "中国平安财产保险", p: "核保岗", expected: "其他", note: "平安不属于央国企" },
+    { c: "中兴通讯", p: "研发工程师", expected: "其他", note: "中字头例外名单" },
+    { c: "海大集团—鲸英计划", p: "管培生", expected: "其他" },
+    { c: "城市科技", p: "后端开发", expected: "其他" },
+    { c: "某某能源公司", t: "央企", p: "电气工程师", expected: "央国企", note: "marker 字段优先于企业名推断" },
+    { c: "某民营企业", t: "外资", p: "外贸专员", expected: "外企", note: "marker 字段优先于企业名推断" },
+  ];
+  for (const item of cases) {
+    const job = {
+      c: item.c,
+      p: item.p,
+      l: "广州",
+      u: `https://jobs.example.com/${encodeURIComponent(item.c)}`,
+    };
+    if (item.t) job.t = item.t;
+    const record = normalizeJob(job, communitySource, NOW);
+    assert.equal(record.companyType, item.expected, item.note || `企业性质推断：${item.c}`);
+  }
+});
+
+test("社区聚合源超长类别会被截断并保留省略号", () => {
+  const longCategory = "鲸英领袖生：硕士及以上学历（2027届/2026 届应届毕业生） 专业不限 农学 经营类相关专业优先";
+  assert.ok(longCategory.length > 48, "测试用例本身应超过截断阈值");
+  const record = normalizeJob({
+    c: "长标签企业",
+    p: longCategory,
+    l: "深圳",
+    u: "https://jobs.example.com/long-category",
+  }, communitySource, NOW);
+
+  assert.equal(record.jobCategories.length, 1);
+  const capped = record.jobCategories[0];
+  assert.equal(capped.length, 49, "截断后应为 48 字符 + 省略号");
+  assert.match(capped, /…$/);
+  assert.ok(capped.startsWith(longCategory.slice(0, 48)));
+});
+
 test("社区聚合多城市规范化不会因相同投递链接互相去重", () => {
   const records = normalizeJobs({
     c: "同链接企业",
