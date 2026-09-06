@@ -559,6 +559,32 @@ assert.match(csvRows[0], /"sourceType","isDemo"$/);
 assert.match(csvRows[1], /"demo","true"$/);
 assert.match(csvRows[2], /"community-json","false"$/);
 
+const ics = app.makeIcs([app.initialRecords[0], { ...app.initialRecords[1], deadline: "" }]);
+assert.match(ics, /BEGIN:VCALENDAR/);
+assert.match(ics, /PRODID:-\/\/autumn-recruitment-tracker\/\/CN/);
+assert.match(ics, /DTSTART;VALUE=DATE:20260910/, "有截止日期的记录应生成全天事件");
+assert.match(ics, /DTEND;VALUE=DATE:20260911/);
+assert.match(ics, /SUMMARY:截止：华润集团/);
+assert.equal((ics.match(/BEGIN:VEVENT/g) || []).length, 1, "无截止日期的记录不应生成事件");
+
+const backupStorageRef = {};
+const backupApp = loadApp({ payload: { records: [sourceRecord] }, storageRef: backupStorageRef });
+assert.equal(backupApp.updateStatus(sourceRecord.id, "已投递"), true);
+const backupRaw = backupStorageRef.storage.getItem("autumn-recruitment-tracker:v2");
+assert.ok(backupRaw, "更新状态后应写入本机存储");
+const parsedBackup = app.parseStoredState(JSON.parse(backupRaw));
+assert.equal(
+  parsedBackup.progress.some((entry) => entry.id === sourceRecord.id && entry.status === "已投递"),
+  true,
+  "备份内容应包含投递进度",
+);
+const importedApp = loadApp({ payload: { records: [sourceRecord] }, stored: backupRaw });
+assert.equal(
+  importedApp.data.find((record) => record.id === sourceRecord.id).status,
+  "已投递",
+  "从备份文件恢复后投递进度应保留",
+);
+
 const stylesheet = fs.readFileSync(path.join(ROOT, "styles.css"), "utf8");
 const categoryTagStyles = stylesheet.match(/\.category-tag\s*\{([\s\S]*?)\}/)?.[1] || "";
 assert.match(categoryTagStyles, /white-space:\s*normal/);

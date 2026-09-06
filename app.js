@@ -80,6 +80,7 @@
       city: "",
       deadline: "",
       status: "",
+      role: "",
     },
     sort: "default",
     currentPage: 1,
@@ -979,6 +980,125 @@
     return String(value ?? "").trim().toLocaleLowerCase();
   }
 
+  function downloadTextFile(content, filename, mime) {
+    if (!hasDocument || typeof Blob === "undefined") return false;
+    if (!root.URL || typeof root.URL.createObjectURL !== "function") return false;
+    const blob = new Blob([content], { type: mime });
+    const url = root.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.rel = "noopener";
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    if (typeof root.URL.revokeObjectURL === "function") {
+      root.setTimeout(() => root.URL.revokeObjectURL(url), 0);
+    }
+    return true;
+  }
+
+  function icsEscape(value) {
+    return String(value ?? "")
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\r?\n/g, "\\n");
+  }
+
+  function icsNextDay(dateValue) {
+    const time = Date.parse(`${dateValue}T00:00:00Z`);
+    if (Number.isNaN(time)) return null;
+    return new Date(time + 86400000).toISOString().slice(0, 10).replace(/-/g, "");
+  }
+
+  // 把筛选结果里带截止日期的岗位导出为全天日历事件，可订阅到
+  // 系统日历/飞书/Outlook，避免“3 天内截止”只在打开页面时可见。
+  function makeIcs(records = state.records, now = new Date()) {
+    const stamp = (now instanceof Date && !Number.isNaN(now.getTime()) ? now : new Date())
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace(/\.\d{3}/, "");
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//autumn-recruitment-tracker//CN",
+      "CALSCALE:GREGORIAN",
+    ];
+    (Array.isArray(records) ? records : []).forEach((record, index) => {
+      if (!isDateOnly(record?.deadline)) return;
+      const endDate = icsNextDay(record.deadline);
+      if (!endDate) return;
+      lines.push(
+        "BEGIN:VEVENT",
+        `UID:${encodeURIComponent(record.id || `record-${index}`)}@autumn-recruitment-tracker`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART;VALUE=DATE:${record.deadline.replace(/-/g, "")}`,
+        `DTEND;VALUE=DATE:${endDate}`,
+        `SUMMARY:${icsEscape(`截止：${record.companyName}`)}`,
+        `DESCRIPTION:${icsEscape(record.campusUrl || "")}`,
+        "END:VEVENT",
+      );
+    });
+    lines.push("END:VCALENDAR");
+    return lines.join("\r\n") + "\r\n";
+  }
+
+  function downloadIcs(records = getMatchingRecords()) {
+    const ics = makeIcs(records);
+    const eventCount = (ics.match(/BEGIN:VEVENT/g) || []).length;
+    if (eventCount === 0) {
+      showToast("当前筛选结果没有可导出的截止日期");
+      return false;
+    }
+    const saved = downloadTextFile(ics, "秋招追踪台-截止日历.ics", "text/calendar;charset=utf-8");
+    showToast(saved ? `已导出 ${eventCount} 个截止日历事件` : "导出失败：当前环境不支持下载");
+    return saved;
+  }
+
+  function exportProgressBackup() {
+    const storage = getStorage();
+    const raw = storage ? storage.getItem(storageKey) : null;
+    if (!raw) {
+      showToast("暂无已保存的进度可备份");
+      return false;
+    }
+    const saved = downloadTextFile(raw, "秋招追踪台-进度备份.json", "application/json");
+    showToast(saved ? "进度备份已导出，请妥善保存该文件" : "导出失败：当前环境不支持下载");
+    return saved;
+  }
+
+  async function handleImportProgressFile(event) {
+    const input = event.target;
+    const file = input && input.files && input.files[0];
+    if (!file) return;
+    try {
+      const parsed = parseStoredState(JSON.parse(await file.text()));
+      if (!parsed) {
+        showToast("备份文件格式无效，未导入");
+        return;
+      }
+      const confirmFn = typeof root.confirm === "function" ? root.confirm.bind(root) : () => true;
+      if (!confirmFn(`导入将覆盖本机当前进度（${parsed.progress.length} 条进度 / ${parsed.history.length} 条历史记录），确定继续吗？`)) {
+        return;
+      }
+      const storage = getStorage();
+      if (!storage) {
+        showToast("本机存储不可用，无法导入");
+        return;
+      }
+      storage.setItem(storageKey, JSON.stringify(parsed));
+      state.records = loadRecords();
+      renderAll();
+      showToast(`已导入 ${parsed.progress.length} 条投递进度`);
+    } catch {
+      showToast("备份文件读取失败，未导入");
+    } finally {
+      input.value = "";
+    }
+  }
+
   const STATUS_INFERENCE_RULES = [
     {
       status: "已接受 / 已拒绝 offer",
@@ -1138,6 +1258,23 @@
     return state === filterValue;
   }
 
+  // 岗位方向筛选：按类别关键词匹配。关键词刻意保守，避免“测试”误伤
+  // “测绘”以外的正常岗位；同一岗位可同时命中多个方向。
+  const ROLE_FILTER_RULES = Object.freeze([
+    { value: "test", label: "测试与质量", pattern: /测试|测开|质量|品质|qa/i },
+    { value: "dev", label: "研发与硬件", pattern: /开发|研发|软件|硬件|嵌入式|前端|后端|机械|电气|结构/i },
+    { value: "algo", label: "算法与AI", pattern: /算法|大模型|机器学习|深度学习|具身智能/i },
+    { value: "product", label: "产品与运营", pattern: /产品|运营|项目管理|解决方案/i },
+    { value: "func", label: "职能与市场", pattern: /人力|人事|财务|行政|法务|管培|销售|市场|品牌/i },
+  ]);
+
+  function matchesRoleFilter(record, roleValue) {
+    const rule = ROLE_FILTER_RULES.find((rule) => rule.value === roleValue);
+    if (!rule) return true;
+    const categories = Array.isArray(record?.categories) ? record.categories : [];
+    return rule.pattern.test(normalizeSearchText(categories.join(" ")));
+  }
+
   function formatDate(value) {
     if (!isDateOnly(value)) return "待公布";
     return value.replace(/-/g, ".");
@@ -1238,7 +1375,14 @@
 
   function sortRecords(records, sortValue = state.sort) {
     const indexed = records.map((record, index) => ({ record, index }));
-    if (sortValue === "default") return indexed.map(({ record }) => record);
+    if (sortValue === "default") {
+      // 默认排序把示例数据沉底：模拟日期不能抢在真实校招信息前面，
+      // 组内仍保持原有顺序，用户选择的排序方式不受影响。
+      return indexed
+        .map((entry) => ({ ...entry, demo: isExampleRecord(entry.record) ? 1 : 0 }))
+        .sort((left, right) => (left.demo - right.demo) || (left.index - right.index))
+        .map((entry) => entry.record);
+    }
 
     const direction = sortValue.endsWith("-desc") ? -1 : 1;
     indexed.sort((left, right) => {
@@ -1323,6 +1467,7 @@
     if (filters.province && record.province !== filters.province) return false;
     if (filters.city && record.city !== filters.city) return false;
     if (filters.status && record.status !== filters.status) return false;
+    if (filters.role && !matchesRoleFilter(record, filters.role)) return false;
     if (filters.deadline && !matchesDeadlineFilter(record.deadline, filters.deadline)) return false;
     return true;
   }
@@ -1845,6 +1990,7 @@
     if (dom.natureFilter) dom.natureFilter.value = state.filters.nature;
     if (dom.deadlineFilter) dom.deadlineFilter.value = state.filters.deadline;
     if (dom.statusFilter) dom.statusFilter.value = state.filters.status;
+    if (dom.roleFilter) dom.roleFilter.value = state.filters.role;
     if (dom.sortSelect) dom.sortSelect.value = state.sort;
     refreshLocationOptions();
   }
@@ -1857,6 +2003,7 @@
       city: "",
       deadline: "",
       status: "",
+      role: "",
     };
     state.cityDraft = { province: focusProvince, city: "" };
     state.cityRequest = {
@@ -2143,6 +2290,10 @@
       downloadCsv(records);
       showToast(`已导出 ${records.length} 条岗位记录`);
     });
+    dom.exportIcsButton?.addEventListener("click", () => downloadIcs(getExportRecords()));
+    dom.backupProgressButton?.addEventListener("click", exportProgressBackup);
+    dom.importProgressButton?.addEventListener("click", () => dom.importProgressInput?.click());
+    dom.importProgressInput?.addEventListener("change", handleImportProgressFile);
     dom.heroExportButton?.addEventListener("click", () => {
       const records = getExportRecords();
       downloadCsv(records);
@@ -2178,6 +2329,7 @@
       cityFilter: byId("cityFilter"),
       deadlineFilter: byId("deadlineFilter"),
       statusFilter: byId("statusFilter"),
+      roleFilter: byId("roleFilter"),
       sortSelect: byId("sortSelect"),
       clearFiltersButton: byId("clearFiltersButton"),
       emptyClearButton: byId("emptyClearButton"),
@@ -2186,6 +2338,10 @@
       cityFetchButton: byId("cityFetchButton"),
       cityFetchStatus: byId("cityFetchStatus"),
       exportButton: byId("exportButton"),
+      exportIcsButton: byId("exportIcsButton"),
+      backupProgressButton: byId("backupProgressButton"),
+      importProgressButton: byId("importProgressButton"),
+      importProgressInput: byId("importProgressInput"),
       heroExportButton: byId("heroExportButton"),
       heroResetButton: byId("heroResetButton"),
       desktopTableView: byId("desktopTableView"),
@@ -2239,6 +2395,13 @@
     syncControls();
     bindEvents();
     renderAll();
+    // 每次打开页面时提醒一次即将截止且未投递的岗位，避免错过窗口。
+    const dueSoonCount = state.records.filter((record) => (
+      record.status === DEFAULT_STATUS && deadlineState(record.deadline) === "soon"
+    )).length;
+    if (dueSoonCount > 0) {
+      showToast(`有 ${dueSoonCount} 个岗位 3 天内截止且未投递，可用“截止时间”筛选查看`);
+    }
   }
 
   const api = {
@@ -2282,6 +2445,9 @@
     formatSyncTime,
     recordMatchesFilters,
     filterRecords,
+    matchesRoleFilter,
+    roleFilterRules: ROLE_FILTER_RULES,
+    makeIcs,
     isFocusRecord,
     sortRecords,
     makeCsv,
@@ -2292,6 +2458,7 @@
     isCommunityFallbackUrl,
     isValidStoredRecord,
     serializeStoredState,
+    parseStoredState,
     isOptionalDate,
     escapeHtml,
     inferStatusFromNotice,

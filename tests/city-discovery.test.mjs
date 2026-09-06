@@ -186,4 +186,20 @@ assert.equal(app.filterRecords([unknownDeadline], {
 assert.equal(app.matchesDeadlineFilter("2099-01-01", "open"), true);
 assert.equal(app.matchesDeadlineFilter("2020-01-01", "open"), false);
 
+const roleRecords = [
+  { ...records[1], id: "role-test-1", categories: ["测试开发工程师", "质量保障"] },
+  { ...records[1], id: "role-test-2", categories: ["软件测试工程师"] },
+  { ...records[1], id: "role-dev", categories: ["后端开发工程师"] },
+  { ...records[1], id: "role-algo", categories: ["具身智能算法研究员"] },
+];
+const roleFilter = { keyword: "", nature: "", province: "", city: "", deadline: "", status: "", role: "test" };
+assert.deepEqual(
+  app.filterRecords(roleRecords, roleFilter).map((record) => record.id),
+  ["role-test-1", "role-test-2"],
+  "测试与质量方向应按类别关键词匹配",
+);
+assert.equal(app.filterRecords(roleRecords, { ...roleFilter, role: "algo" }).length, 1);
+assert.equal(app.filterRecords(roleRecords, { ...roleFilter, role: "" }).length, 4, "空方向不过滤");
+assert.deepEqual(Array.from(app.roleFilterRules, (rule) => rule.value), ["test", "dev", "algo", "product", "func"]);
+
 console.log("city discovery tests passed");

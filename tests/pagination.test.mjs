@@ -78,6 +78,18 @@ assert.match(
   "分页控件应在 320px 所属断点改为纵向布局",
 );
 
+const defaultSorted = app.getMatchingRecords();
+assert.deepEqual(
+  Array.from(defaultSorted.slice(-5), (record) => record.isDemo === true),
+  [true, true, true, true, true],
+  "默认排序应把示例数据沉底，避免模拟日期抢占真实岗位",
+);
+assert.equal(
+  Array.from(defaultSorted.slice(0, totalCount - 5), (record) => record.isDemo !== true).every(Boolean),
+  true,
+  "默认排序下示例数据之前的都应是真实岗位",
+);
+
 const totalPages = app.calculatePageCount(totalCount, 80);
 // 分页机制用固定长度的合成数组验证，避免依赖快照规模；
 // 快照本身的数量断言在上方已经完成。

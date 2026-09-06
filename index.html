@@ -204,6 +204,17 @@
                   <option value="">全部状态</option>
                 </select>
               </label>
+              <label class="field">
+                <span class="field-label">岗位方向</span>
+                <select id="roleFilter" data-filter="role">
+                  <option value="">全部方向</option>
+                  <option value="test">测试与质量</option>
+                  <option value="dev">研发与硬件</option>
+                  <option value="algo">算法与AI</option>
+                  <option value="product">产品与运营</option>
+                  <option value="func">职能与市场</option>
+                </select>
+              </label>
             </div>
           </form>
 
@@ -310,6 +321,10 @@
                 </svg>
                 导出 CSV
               </button>
+              <button class="button button-secondary" id="exportIcsButton" type="button">导出日历</button>
+              <button class="button button-secondary" id="backupProgressButton" type="button">备份进度</button>
+              <button class="button button-secondary" id="importProgressButton" type="button">导入备份</button>
+              <input id="importProgressInput" type="file" accept="application/json,.json" hidden />
             </div>
           </div>
 
