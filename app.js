@@ -1523,6 +1523,56 @@
     };
   }
 
+  // 已投递汇总：所有不再是“未投递”的记录，按状态更新时间倒序排列，
+  // 并给出各状态的家数分布，方便快速盘点当前手上有哪些活流程。
+  function calculateAppliedSummary(records = state.records) {
+    const applied = (Array.isArray(records) ? records : [])
+      .filter((record) => record.status && record.status !== DEFAULT_STATUS)
+      .sort((left, right) => {
+        const leftTime = Date.parse(left.statusUpdatedAt || "") || 0;
+        const rightTime = Date.parse(right.statusUpdatedAt || "") || 0;
+        return rightTime - leftTime;
+      });
+    const byStatus = {};
+    applied.forEach((record) => {
+      byStatus[record.status] = (byStatus[record.status] || 0) + 1;
+    });
+    return { applied, byStatus };
+  }
+
+  function renderAppliedSummary() {
+    if (!hasDocument || !dom.appliedSummarySection) return;
+    const { applied, byStatus } = calculateAppliedSummary(state.records);
+    dom.appliedSummarySection.hidden = applied.length === 0;
+    if (applied.length === 0) return;
+    if (dom.appliedSummaryStats) {
+      dom.appliedSummaryStats.textContent = `共 ${applied.length} 家：${statusOptions
+        .filter((status) => status !== DEFAULT_STATUS && byStatus[status])
+        .map((status) => `${status} ${byStatus[status]}`)
+        .join(" · ")}`;
+    }
+    if (dom.appliedSummaryList) {
+      dom.appliedSummaryList.innerHTML = applied.map((record) => {
+        const meta = [
+          record.city || record.province,
+          ...(Array.isArray(record.categories) ? record.categories.slice(0, 2) : []),
+        ].filter(Boolean).join(" · ");
+        return `<article class="applied-card" data-status="${escapeHtml(record.status)}">
+          <div class="applied-card-main">
+            <span class="company-avatar" aria-hidden="true">${escapeHtml(companyMark(record.companyName))}</span>
+            <div class="applied-card-copy">
+              <strong class="applied-card-name">${escapeHtml(record.companyName)}</strong>
+              <span class="applied-card-meta">${escapeHtml(meta || "—")}</span>
+            </div>
+          </div>
+          <span class="applied-chip status-badge ${statusClassName(record.status)}">${escapeHtml(record.status)}</span>
+          <time class="applied-card-time" datetime="${escapeHtml(record.statusUpdatedAt)}" title="最近更新时间">${escapeHtml(formatUpdatedAt(record.statusUpdatedAt))}</time>
+          ${renderCampusLink(record, true)}
+        </article>`;
+      }).join("");
+    }
+  }
+
   function setSelectOptions(select, values, emptyLabel) {
     if (!select || !hasDocument) return;
     const fragment = document.createDocumentFragment();
@@ -1964,6 +2014,7 @@
     updateDataNote();
     populateStatusAssistantJobs();
     updateStats();
+    renderAppliedSummary();
     renderResults();
   }
 
@@ -2330,6 +2381,9 @@
       deadlineFilter: byId("deadlineFilter"),
       statusFilter: byId("statusFilter"),
       roleFilter: byId("roleFilter"),
+      appliedSummarySection: byId("appliedSummarySection"),
+      appliedSummaryStats: byId("appliedSummaryStats"),
+      appliedSummaryList: byId("appliedSummaryList"),
       sortSelect: byId("sortSelect"),
       clearFiltersButton: byId("clearFiltersButton"),
       emptyClearButton: byId("emptyClearButton"),
@@ -2432,6 +2486,7 @@
     setSortValue,
     setPageSize,
     calculateStats,
+    calculateAppliedSummary,
     calculateSnapshotSummary,
     calculateDiscoverySummary,
     getDataProvenanceText,

@@ -2435,3 +2435,88 @@ h1 span {
     display: none !important;
   }
 }
+
+
+/* 已投递汇总 */
+.applied-summary-section {
+  margin: 26px 0 0;
+  padding: 22px 24px;
+  border: 1px solid #e2e7e1;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fbfdfb, #f6faf7);
+}
+
+.applied-summary-stats {
+  margin: 0 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--forest);
+}
+
+.applied-summary-list {
+  display: grid;
+  gap: 10px;
+}
+
+.applied-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border: 1px solid #e2e7e1;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.applied-card-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.applied-card-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.applied-card-name {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.applied-card-meta {
+  font-size: 11px;
+  color: var(--ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.applied-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--status-border);
+  border-radius: 999px;
+  background: var(--status-bg);
+  color: var(--status-fg);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.applied-card-time {
+  font-size: 11px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .applied-card-time {
+    margin-left: auto;
+  }
+}

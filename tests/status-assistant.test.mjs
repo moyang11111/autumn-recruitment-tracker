@@ -585,6 +585,23 @@ assert.equal(
   "从备份文件恢复后投递进度应保留",
 );
 
+const summaryRecords = [
+  { ...app.initialRecords[0], id: "summary-a", status: "面试中", statusUpdatedAt: "2026-09-01T10:00:00.000Z" },
+  { ...app.initialRecords[1], id: "summary-b", status: "已投递", statusUpdatedAt: "2026-09-02T10:00:00.000Z" },
+  { ...app.initialRecords[2], id: "summary-c", status: "未投递", statusUpdatedAt: "1970-01-01T00:00:00.000Z" },
+];
+const appliedSummary = app.calculateAppliedSummary(summaryRecords);
+assert.deepEqual(
+  appliedSummary.applied.map((record) => record.id),
+  ["summary-b", "summary-a"],
+  "已投递汇总应按状态更新时间倒序",
+);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(appliedSummary.byStatus)),
+  { "已投递": 1, "面试中": 1 },
+  "未投递的记录不计入汇总",
+);
+
 const stylesheet = fs.readFileSync(path.join(ROOT, "styles.css"), "utf8");
 const categoryTagStyles = stylesheet.match(/\.category-tag\s*\{([\s\S]*?)\}/)?.[1] || "";
 assert.match(categoryTagStyles, /white-space:\s*normal/);
